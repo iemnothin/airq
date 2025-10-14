@@ -21,7 +21,7 @@ app.add_middleware(
 )
 
 # Load dan siapkan data
-df = pd.read_csv("processed_pollutants.csv")
+df = pd.read_csv("ispu_clean.csv")
 df["Waktu"] = pd.to_datetime(df["Waktu"])
 pollutants = ["PM10", "PM25", "SO2", "CO", "O3", "NO2", "HC"]
 
