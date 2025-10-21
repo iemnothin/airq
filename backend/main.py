@@ -29,7 +29,7 @@ for col in pollutants:
     df[col] = pd.to_numeric(df[col], errors="coerce")
 
 df.set_index("Waktu", inplace=True)
-df = df.resample("h").mean().reset_index()
+df = df.resample("D").mean().reset_index()
 
 model_cache = {}
 
