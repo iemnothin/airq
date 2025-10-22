@@ -34,7 +34,7 @@ df = df.resample("D", on="Waktu").mean().reset_index()
 model_cache = {}
 
 # === Helper Functions ===
-def get_or_train_model(df, column, years=[2022, 2023, 2024, 2025, 2026]):
+def get_or_train_model(df, column, years=[2022, 2023, 2024, 2025]):
     """Train Prophet model for given pollutant (cached)."""
     if column not in model_cache:
         model = Prophet(
@@ -43,14 +43,14 @@ def get_or_train_model(df, column, years=[2022, 2023, 2024, 2025, 2026]):
             daily_seasonality=False,
             holidays=make_holidays_df(year_list=years, country="ID"),
         )
-        model.add_seasonality(name="weekly", period=15, fourier_order=5)
+        model.add_seasonality(name="monthly", period=30.5, fourier_order=5)
         data = df[["Waktu", column]].rename(columns={"Waktu": "ds", column: "y"})
         model.fit(data)
         model_cache[column] = model
     return model_cache[column]
 
 
-def get_prediction_for_date(model, date_obj, horizon=90):
+def get_prediction_for_date(model, date_obj, horizon=7):
     """Generate forecast and return specific date prediction."""
     forecast = model.predict(model.make_future_dataframe(periods=horizon))
     forecast["ds"] = pd.to_datetime(forecast["ds"]).dt.date

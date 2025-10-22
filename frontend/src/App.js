@@ -22,11 +22,13 @@ function App() {
   const [mapeResults, setMapeResults] = useState({});
   const [error, setError] = useState(null);
 
+  // === Jam Real-Time ===
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
+  // === Fetch utama ===
   useEffect(() => {
     fetchAirQuality();
     fetchForecast();
@@ -43,15 +45,15 @@ function App() {
         const response = await axios.get("http://localhost:8000/api/v1/mape");
         setMapeResults(response.data);
       } catch (err) {
-        setError("Failed to fetch MAPE data");
+        setError("Gagal memuat data akurasi (MAPE).");
       } finally {
         setLoading(false);
       }
     };
-
     fetchMape();
   }, []);
 
+  // === Utils ===
   const getColorByISPU = (ispu) => {
     if (ispu <= 50) return "#4CAF50";
     if (ispu <= 100) return "#2196F3";
@@ -70,6 +72,7 @@ function App() {
     return "Tidak Terdefinisi";
   };
 
+  // === Fetch Data ===
   const fetchAirQuality = async () => {
     try {
       const { data } = await axios.get(
@@ -78,6 +81,7 @@ function App() {
       setCurrentAirQuality(data);
     } catch (error) {
       console.error("Error fetching air quality data", error);
+      setError("Gagal memuat data kualitas udara (kode 500).");
     }
   };
 
@@ -88,12 +92,14 @@ function App() {
       setForecast(data);
     } catch (error) {
       console.error("Error fetching forecast data", error);
+      setError("Gagal memuat data prediksi (kode 500).");
     }
   };
 
+  // === Prediksi Berdasarkan Tanggal ===
   const getPrediction = async () => {
     if (!selectedDate) {
-      alert("Please select a date before requesting prediction.");
+      alert("Pilih tanggal terlebih dahulu sebelum memprediksi.");
       return;
     }
 
@@ -102,42 +108,37 @@ function App() {
     setSpecificDatePrediction(null);
 
     const progressInterval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 90) return prev;
-        return prev + 10;
-      });
+      setProgress((prev) => (prev >= 90 ? prev : prev + 10));
     }, 200);
 
     try {
       const formattedDate = new Date(selectedDate);
       if (isNaN(formattedDate)) {
         console.error("Invalid selected date:", selectedDate);
-        setSpecificDatePrediction("Invalid date format.");
+        setSpecificDatePrediction("Format tanggal tidak valid.");
         return;
       }
 
       const formattedDateString = formattedDate.toISOString().split("T")[0];
-
       const { data } = await axios.get(
         `http://localhost:8000/api/v1/predict/${formattedDateString}`
       );
       console.log("API Response:", data);
 
       setSpecificDatePrediction(
-        data.length > 0 ? data : "No forecast available for this date."
+        data.length > 0 ? data : "Tidak ada prediksi untuk tanggal ini."
       );
-
       setProgress(100);
     } catch (error) {
-      setSpecificDatePrediction(
-        error.response?.data?.message || "Error fetching prediction."
-      );
+      console.error("Error fetching prediction:", error);
+      setSpecificDatePrediction("Terjadi kesalahan saat memuat prediksi.");
     } finally {
       clearInterval(progressInterval);
       setLoading(false);
     }
   };
 
+  // === Format Tanggal ===
   function formatDate(dateString) {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat("id-ID", {
@@ -147,14 +148,33 @@ function App() {
     }).format(date);
   }
 
+  // === Halaman Loading ===
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="d-flex flex-column justify-content-center align-items-center vh-100 bg-light">
+        <div className="spinner-border text-success" role="status"></div>
+        <p className="mt-3">Memuat data...</p>
+      </div>
+    );
   }
 
+  // === Halaman Error ===
   if (error) {
-    return <div>Error: {error}</div>;
+    return (
+      <div className="d-flex flex-column justify-content-center align-items-center vh-100 bg-light text-center">
+        <i className="fas fa-server fa-5x text-danger mb-4"></i>
+        <h2 className="fw-bold text-danger">500 - Internal Server Error</h2>
+        <p className="text-muted mb-3">{error}</p>
+        <button
+          className="btn btn-danger px-4"
+          onClick={() => window.location.reload()}>
+          Coba Lagi
+        </button>
+      </div>
+    );
   }
 
+  // === Halaman Utama ===
   return (
     <div className="mx-4 my-2">
       <Header
@@ -195,7 +215,6 @@ function App() {
         setSelectedDate={setSelectedDate}
         getPrediction={getPrediction}
         specificDatePrediction={specificDatePrediction}
-        // loading={loading}
         progress={progress}
         getColorByISPU={getColorByISPU}
         getLevelByISPU={getLevelByISPU}
