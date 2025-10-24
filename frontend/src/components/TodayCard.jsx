@@ -225,7 +225,7 @@ const TodayCard = ({
                       ? "Sulfur dioksida (SO₂) adalah gas tidak berwarna. Gas ini termasuk dalam sekelompok gas yang sangat reaktif yang dikenal sebagai 'oksida belerang'. Mereka dengan mudah bereaksi bersama untuk membentuk senyawa berbahaya seperti asam sulfat, asam belerang, dan partikel sulfat."
                       : selectedPollutant.pollutant === "PM10"
                       ? "PM10 adalah partikel di udara dengan diameter 10 mikrometer atau kurang (termasuk asap, jelaga, garam, asam, dan logam). Perbedaan antara PM10 dan PM2.5 hanya pada ukurannya - dimana PM2.5 sangat halus, sedangkan PM10 lebih besar dan kasar."
-                      : selectedPollutant.pollutant === "PM2.5"
+                      : selectedPollutant.pollutant === "PM25"
                       ? "PM2.5 merupakan partikel yang mengambang di udara dengan ukuran diameter 2,5 mikrometer atau kurang. Ukuran PM2.5 sangat kecil sehingga dapat diserap ke dalam aliran darah saat bernapas. Karena alasan ini, biasanya polutan ini menimbulkan ancaman kesehatan terbesar."
                       : "Deskripsi polutan lainnya..."}
                   </p>

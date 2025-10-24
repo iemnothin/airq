@@ -5,3 +5,4 @@ numpy
 prophet
 optuna
 holidays
+scikit-learn
