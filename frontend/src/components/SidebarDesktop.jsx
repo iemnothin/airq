@@ -13,11 +13,23 @@ const SidebarDesktop = () => {
     <div
       className="d-none d-md-flex flex-column vh-100 p-3 bg-light border-end"
       style={{ width: "220px", position: "fixed" }}>
-      <Link
+      {/* <Link
         to="/"
         className="h-4 nav-item text-center mb-4 text-success fw-bold text-decoration-none"
         element={<LandingPage />}>
+          <img src="%PUBLIC_URL%/air-no-outline192.png" alt="logo-AirQ" />
         AirQ
+      </Link> */}
+
+      <Link
+        to="/"
+        className="h-4 nav-item text-center mb-4 text-success fw-bold text-decoration-none d-flex flex-column align-items-center">
+        <img
+          src={process.env.PUBLIC_URL + "/air-no-outline192.png"}
+          alt="logo-AirQ"
+          style={{ width: "60px", marginBottom: "10px" }}
+        />
+        <div>AirQ</div>
       </Link>
 
       <ul className="nav nav-pills flex-column mb-auto">
