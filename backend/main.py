@@ -9,16 +9,52 @@ from prophet.make_holidays import make_holidays_df
 import pandas as pd
 import re
 import traceback
+import mysql.connector
+from fastapi import Request
+from fastapi import File, UploadFile
+import csv
+from fastapi.responses import StreamingResponse
+import io, time, threading
+from pydantic import BaseModel
+
+# === Koneksi ke Database ===
+def get_db_connection():
+    return mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="",  # ubah sesuai user/password kamu
+        database="db_airq"  # ubah sesuai nama DB kamu
+    )
 
 app = FastAPI()
 
+# === Tambahkan ini ===
+origins = [
+    "http://localhost:3000",   # React dev
+    "http://127.0.0.1:3000",   # kadang browser pakai 127.0.0.1
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=origins, 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 🔹 Model data (untuk dokumentasi dan validasi opsional)
+class AirQuality(BaseModel):
+    id: int
+    waktu: str
+    pm10: float
+    pm25: float
+    so2: float
+    co: float
+    o3: float
+    no2: float
+    hc: float
+    kelembaban: float
+    suhu: float
 
 # === Load dan Siapkan Data ===
 # df = pd.read_csv("ispu_clean.csv")
@@ -202,32 +238,213 @@ def get_all_mape():
 # @app.get("/api/data")
 # def get_csv_data():
 #     return JSONResponse(content=df.to_dict(orient="records"))
+# 📡 GET semua data
 @app.get("/api/data")
-def get_csv_data(limit: int = 100):
-    """
-    Menampilkan data ISPU dalam format JSON.
-    Parameter opsional `limit` untuk membatasi jumlah data (default 100 baris).
-    """
+def get_all_data():
     try:
-        data = df.copy()
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
 
-        # Ubah kolom waktu ke format string
-        data["Waktu"] = data["Waktu"].dt.strftime("%Y-%m-%d")
+        cursor.execute("SELECT * FROM air_quality ORDER BY waktu ASC")
+        rows = cursor.fetchall()
 
-        # Bulatkan nilai numerik
-        for col in pollutants:
-            data[col] = data[col].round(2)
+        cursor.close()
+        conn.close()
 
-        # Ganti NaN, inf, -inf dengan None agar JSON valid
-        data = data.replace([float("inf"), float("-inf")], pd.NA)
-        data = data.where(pd.notnull(data), None)
+        if not rows:
+            return []
 
-        # Batasi jumlah baris
-        if limit:
-            data = data.head(limit)
+        return rows
 
-        return JSONResponse(content=data.to_dict(orient="records"))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@app.post("/api/v1/input")
+async def input_air_quality(request: Request):
+    try:
+        data = await request.json()
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        sql = """
+        INSERT INTO air_quality_data (waktu, pm10, pm25, so2, co, o3, no2, hc, kelembaban, suhu)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        val = (
+            data.get("waktu"),
+            data.get("pm10"),
+            data.get("pm25"),
+            data.get("so2"),
+            data.get("co"),
+            data.get("o3"),
+            data.get("no2"),
+            data.get("hc"),
+            data.get("kelembaban"),
+            data.get("suhu"),
+        )
+
+        cursor.execute(sql, val)
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return {"message": "Data berhasil disimpan ke database"}
 
     except Exception as e:
         traceback.print_exc()
         return JSONResponse(content={"error": str(e)}, status_code=500)
+    
+@app.post("/api/v1/upload-csv")
+async def upload_csv(file: UploadFile = File(...)):
+    try:
+        if not file.filename.endswith(".csv"):
+            return JSONResponse({"error": "File harus berformat CSV"}, status_code=400)
+
+        # Baca isi file
+        content = await file.read()
+        data = pd.read_csv(io.StringIO(content.decode("utf-8")))
+
+        # Validasi kolom wajib
+        required_cols = ["Waktu", "PM10", "PM25", "SO2", "CO", "O3", "NO2", "HC"]
+        for col in required_cols:
+            if col not in data.columns:
+                return JSONResponse({"error": f"Kolom '{col}' tidak ditemukan di CSV"}, status_code=400)
+
+        # Tambahkan kolom opsional
+        for col in ["Kelembaban", "Suhu"]:
+            if col not in data.columns:
+                data[col] = None
+
+        data["Waktu"] = pd.to_datetime(data["Waktu"], errors="coerce")
+        data = data.dropna(subset=["Waktu"])
+        data = data.replace({pd.NA: None, "nan": None, "NaT": None})
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        insert_sql = """
+        INSERT INTO air_quality_data
+        (waktu, pm10, pm25, so2, co, o3, no2, hc, kelembaban, suhu)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """
+
+        total_rows = len(data)
+        batch_size = 100
+
+        # Generator progress
+        def generate():
+            try:
+                for i in range(0, total_rows, batch_size):
+                    batch = data.iloc[i:i+batch_size]
+                    rows = [
+                        (
+                            r["Waktu"].strftime("%Y-%m-%d %H:%M:%S"),
+                            r["PM10"], r["PM25"], r["SO2"], r["CO"],
+                            r["O3"], r["NO2"], r["HC"],
+                            r["Kelembaban"], r["Suhu"]
+                        )
+                        for _, r in batch.iterrows()
+                    ]
+                    cursor.executemany(insert_sql, rows)
+                    conn.commit()
+
+                    progress = int(((i + len(batch)) / total_rows) * 100)
+                    yield f"data: {progress}\n\n"
+                    time.sleep(0.2)
+
+                cursor.close()
+                conn.close()
+                yield f"data: 100\n\n"
+            except Exception as e:
+                yield f"data: error:{str(e)}\n\n"
+
+        return StreamingResponse(generate(), media_type="text/event-stream")
+
+    except Exception as e:
+        traceback.print_exc()
+        return JSONResponse({"error": str(e)}, status_code=500)
+    
+@app.post("/api/v1/upload-csv")
+async def upload_csv(file: UploadFile = File(...)):
+    try:
+        if not file.filename.endswith(".csv"):
+            return JSONResponse({"error": "File harus berformat CSV"}, status_code=400)
+
+        content = await file.read()
+        data = pd.read_csv(io.StringIO(content.decode("utf-8")))
+
+        # Validasi kolom wajib
+        required_cols = ["Waktu", "PM10", "PM25", "SO2", "CO", "O3", "NO2", "HC"]
+        for col in required_cols:
+            if col not in data.columns:
+                return JSONResponse({"error": f"Kolom '{col}' tidak ditemukan di CSV"}, status_code=400)
+
+        # Kolom tambahan
+        for col in ["Kelembaban", "Suhu"]:
+            if col not in data.columns:
+                data[col] = None
+
+        data["Waktu"] = pd.to_datetime(data["Waktu"], errors="coerce")
+        data = data.dropna(subset=["Waktu"])
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        insert_sql = """
+        INSERT INTO air_quality_data
+        (waktu, pm10, pm25, so2, co, o3, no2, hc, kelembaban, suhu)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """
+
+        for _, r in data.iterrows():
+            cursor.execute(
+                insert_sql,
+                (
+                    r["Waktu"].strftime("%Y-%m-%d %H:%M:%S"),
+                    r["PM10"], r["PM25"], r["SO2"], r["CO"],
+                    r["O3"], r["NO2"], r["HC"],
+                    r["Kelembaban"], r["Suhu"]
+                ),
+            )
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return JSONResponse({"message": "File berhasil diunggah dan disimpan!"})
+    except Exception as e:
+        traceback.print_exc()
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+@app.get("/api/data")
+def get_csv_data(limit: int = 100):
+    """Ambil data terakhir dari tabel untuk ditampilkan di React."""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(f"SELECT * FROM air_quality_data ORDER BY waktu DESC LIMIT {limit}")
+        rows = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return JSONResponse(content=rows)
+    except Exception as e:
+        traceback.print_exc()
+        return JSONResponse({"error": str(e)}, status_code=500)
+    def event_stream():
+        while True:
+            yield f"data: {progress_data['value']}\n\n"
+            time.sleep(0.3)
+            if progress_data["status"].startswith("error") or progress_data["status"] == "done":
+                break
+        yield "data: 100\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
+    def event_stream():
+        while True:
+            yield f"data: {progress_data['value']}\n\n"
+            time.sleep(0.3)
+            if progress_data["status"] == "done":
+                break
+        yield "data: 100\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
