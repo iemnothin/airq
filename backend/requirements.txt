@@ -6,3 +6,5 @@ prophet
 optuna
 holidays
 scikit-learn
+mysql-connector-python
+python-multipart
