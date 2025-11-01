@@ -5,7 +5,7 @@ import "animate.css";
 const BackendErrPage = ({ message, onRetry }) => {
   return (
     <div className="backend-error-wrapper">
-      <div className="backend-error-card animate__fadeIn">
+      <div className="backend-error-card animate__animated animate__fadeIn">
         <div className="icon-wrapper float-animation">
           <i className="fas fa-server"></i>
         </div>
