@@ -9,5 +9,6 @@
   .content-wrapper {
     margin-left: 0px !important;
     padding: 16px !important;
+    padding-bottom: 90px !important; /* ✅ ruang untuk bottom nav */
   }
 }

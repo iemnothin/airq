@@ -1,6 +1,5 @@
 // src/pages/ContainerPage.jsx
 import Navigation from "../components/Navigation";
-import "../css/ContainerPage.css";
 import { Outlet } from "react-router-dom";
 
 const ContainerPage = () => {
