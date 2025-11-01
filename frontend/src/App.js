@@ -1,4 +1,5 @@
 import "bootstrap/dist/css/bootstrap.min.css";
+import "animate.css/animate.min.css";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import "./App.css";
 
@@ -21,6 +22,8 @@ function App() {
 
   // ✅ Backend error page (INI YANG KITA MAU)
   if (error) {
+    const randomChance = Math.random() < 0.05; // 5% chance setiap error
+
     return (
       <BackendErrPage
         message={error}
@@ -28,6 +31,7 @@ function App() {
           setError(null);
           window.location.reload();
         }}
+        isIsekai={randomChance}
       />
     );
   }
