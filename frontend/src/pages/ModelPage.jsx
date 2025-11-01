@@ -1,50 +1,48 @@
 import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
+import "../css/ModelPage.css"; // ✅ tambahkan ini
+
+const API_BASE = "http://localhost:8000/api/v1";
 
 const ModelPage = ({ setError }) => {
   const [file, setFile] = useState(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadedData, setUploadedData] = useState([]); // data dari backend
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadedData, setUploadedData] = useState([]);
   const [showToast, setShowToast] = useState(false);
-  // const [errorMessage, setErrorMessage] = useState(null);
 
-  // 🔹 Ambil semua data dari backend saat halaman pertama kali dimuat
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(20);
+
+  // FETCH INITIAL DATA
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchUploadedData = async () => {
       try {
-        const res = await fetch("http://localhost:8000/api/v1/data");
+        const res = await fetch(`${API_BASE}/data`);
+        if (!res.ok) throw new Error();
 
-        if (!res.ok) throw new Error("Gagal mengambil data");
         const data = await res.json();
-
-        if (Array.isArray(data) && data.length > 0) {
-          setUploadedData(data);
-        } else {
-          setUploadedData([]);
-        }
-      } catch (err) {
-        console.error("Error fetch data:", err);
+        setUploadedData(Array.isArray(data) ? data : []);
+      } catch {
         setUploadedData([]);
         setError("⚠️ Aplikasi kamu belum terhubung dengan server.");
       }
     };
 
-    fetchData();
+    fetchUploadedData();
   }, [setError]);
 
+  // FILE CHANGE
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
     setUploadProgress(0);
   };
 
-  const handleSubmit = async (e) => {
+  // FILE UPLOAD
+  const handleSubmit = (e) => {
     e.preventDefault();
-
-    if (!file) {
-      alert("Pilih file CSV terlebih dahulu!");
-      return;
-    }
+    if (!file) return alert("Pilih file CSV terlebih dahulu!");
 
     const formData = new FormData();
     formData.append("file", file);
@@ -53,99 +51,83 @@ const ModelPage = ({ setError }) => {
     setUploadProgress(0);
 
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", "http://localhost:8000/api/v1/upload-csv", true);
+    xhr.open("POST", `${API_BASE}/upload-csv`);
 
-    xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable) {
-        const percent = Math.round((event.loaded / event.total) * 100);
-        setUploadProgress(percent);
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        setUploadProgress(Math.round((e.loaded / e.total) * 100));
       }
     };
 
-    xhr.onload = async function () {
+    xhr.onload = async () => {
       setIsUploading(false);
-      if (xhr.status === 200) {
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 3000);
+      if (xhr.status !== 200) return alert("Upload gagal!");
 
-        // Ambil data terbaru dari server setelah upload sukses
-        const res = await fetch("http://localhost:8000/api/v1/data");
-        const data = await res.json();
-        setUploadedData(data);
-      } else {
-        alert("Upload gagal!");
-      }
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+
+      const res = await fetch(`${API_BASE}/data`);
+      const data = await res.json();
+      setUploadedData(data);
     };
 
-    xhr.onerror = function () {
-      setError("Tidak dapat menghubungi backend. Pastikan server hidup.");
+    xhr.onerror = () => {
+      setError("Tidak dapat menghubungi backend.");
       setIsUploading(false);
     };
 
     xhr.send(formData);
   };
 
-  // ✅ Pagination Premium
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(20);
-
-  const indexOfLastRow = currentPage * rowsPerPage;
-  const indexOfFirstRow = indexOfLastRow - rowsPerPage;
-  const currentRows = uploadedData.slice(indexOfFirstRow, indexOfLastRow);
-
+  // PAGINATION
   const totalPages = Math.ceil(uploadedData.length / rowsPerPage);
+  const indexFirst = (currentPage - 1) * rowsPerPage;
+  const indexLast = indexFirst + rowsPerPage;
+  const currentRows = uploadedData.slice(indexFirst, indexLast);
 
-  // Helper untuk menampilkan 5 halaman di tengah
   const getPageNumbers = () => {
-    const pages = [];
+    if (totalPages <= 5) return [...Array(totalPages).keys()].map((x) => x + 1);
 
-    if (totalPages <= 5) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      if (currentPage <= 3) {
-        pages.push(1, 2, 3, 4, "...", totalPages);
-      } else if (currentPage >= totalPages - 2) {
-        pages.push(
-          1,
-          "...",
-          totalPages - 3,
-          totalPages - 2,
-          totalPages - 1,
-          totalPages
-        );
-      } else {
-        pages.push(
-          1,
-          "...",
-          currentPage - 1,
-          currentPage,
-          currentPage + 1,
-          "...",
-          totalPages
-        );
-      }
-    }
+    if (currentPage <= 3) return [1, 2, 3, 4, "...", totalPages];
 
-    return pages;
+    if (currentPage >= totalPages - 2)
+      return [
+        1,
+        "...",
+        totalPages - 3,
+        totalPages - 2,
+        totalPages - 1,
+        totalPages,
+      ];
+
+    return [
+      1,
+      "...",
+      currentPage - 1,
+      currentPage,
+      currentPage + 1,
+      "...",
+      totalPages,
+    ];
   };
 
   return (
-    <div className="container py-4" style={{ maxWidth: "900px" }}>
+    <div className="container py-4 model-container">
       <h3 className="text-center mb-4 text-success fw-bold">
         Upload Data Kualitas Udara (CSV)
       </h3>
 
+      {/* FILE UPLOAD */}
       <form onSubmit={handleSubmit}>
         <div className="mb-3">
           <input
             type="file"
             accept=".csv"
-            className="form-control"
+            className="form-control model-file-input"
             onChange={handleFileChange}
           />
         </div>
+
         <button
           type="submit"
           className="btn btn-success w-100"
@@ -158,7 +140,6 @@ const ModelPage = ({ setError }) => {
             <div className="progress" style={{ height: "25px" }}>
               <div
                 className="progress-bar progress-bar-striped progress-bar-animated bg-info"
-                role="progressbar"
                 style={{ width: `${uploadProgress}%` }}>
                 Upload File: {uploadProgress}%
               </div>
@@ -167,39 +148,28 @@ const ModelPage = ({ setError }) => {
         )}
       </form>
 
-      {/* Toast sukses */}
+      {/* TOAST */}
       {showToast && (
-        <div
-          className="toast align-items-center text-bg-success border-0 show position-fixed bottom-0 end-0 m-4"
-          role="alert">
+        <div className="toast text-bg-success show position-fixed bottom-0 end-0 m-4">
           <div className="d-flex">
-            <div className="toast-body">
-              ✅ File berhasil diunggah & disimpan!
-            </div>
+            <div className="toast-body">✅ File berhasil diunggah!</div>
             <button
-              type="button"
               className="btn-close btn-close-white me-2 m-auto"
-              onClick={() => setShowToast(false)}></button>
+              onClick={() => setShowToast(false)}
+            />
           </div>
         </div>
       )}
 
-      {/* {errorMessage && (
-        <div className="alert alert-danger text-center mt-2">
-          {errorMessage}
-        </div>
-      )} */}
-
-      {/* Tabel hasil upload */}
+      {/* DATA TABLE */}
       {uploadedData.length > 0 && (
         <div className="mt-4">
           <h5 className="text-center mb-3 text-secondary">
             Data Kualitas Udara Kota Bogor
           </h5>
+          <small>(src: SPKU Tanah Sereal - kota bogor)</small>
 
-          <div
-            className="table-responsive"
-            style={{ maxHeight: "500px", overflowY: "auto" }}>
+          <div className="table-responsive" style={{ maxHeight: "500px" }}>
             <table className="table table-bordered table-striped">
               <thead className="table-success">
                 <tr>
@@ -208,89 +178,78 @@ const ModelPage = ({ setError }) => {
                   ))}
                 </tr>
               </thead>
-
               <tbody>
-                {currentRows.map((row, index) => (
-                  <tr key={index}>
-                    {Object.values(row).map((val, i) => (
-                      <td key={i}>{val !== null ? val : "-"}</td>
+                {currentRows.map((row, idx) => (
+                  <tr key={idx}>
+                    {Object.values(row).map((v, i) => (
+                      <td key={i}>{v ?? "-"}</td>
                     ))}
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          {/* ✅ Pagination Controls */}
-          <div className="d-flex justify-content-between align-items-center mt-3">
+
+          <div className="table-footer-controls">
             {/* ROWS PER PAGE */}
-            <div>
+            <div className="rows-select-wrapper">
               <select
-                className="form-select"
-                style={{ width: "120px" }}
+                className="form-select rows-select"
                 value={rowsPerPage}
                 onChange={(e) => {
-                  setRowsPerPage(parseInt(e.target.value));
+                  setRowsPerPage(Number(e.target.value));
                   setCurrentPage(1);
                 }}>
-                <option value="10">10 rows</option>
-                <option value="20">20 rows</option>
-                <option value="50">50 rows</option>
-                <option value="100">100 rows</option>
+                <option value={10}>10 rows</option>
+                <option value={20}>20 rows</option>
+                <option value={50}>50 rows</option>
+                <option value={100}>100 rows</option>
               </select>
             </div>
 
             {/* PAGINATION */}
-            <nav>
-              <ul className="pagination mb-0">
-                {/* Previous */}
-                <li
-                  className={`page-item ${
-                    currentPage === 1 ? "disabled" : ""
-                  }`}>
-                  <button
-                    className="page-link"
-                    onClick={() => setCurrentPage((prev) => prev - 1)}>
-                    Previous
-                  </button>
-                </li>
+            <ul className="pagination pagination-centered">
+              <li
+                className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
+                <button
+                  className="page-link"
+                  onClick={() => setCurrentPage((p) => p - 1)}>
+                  Previous
+                </button>
+              </li>
 
-                {/* Numbered pages with ellipsis */}
-                {getPageNumbers().map((page, index) =>
-                  page === "..." ? (
-                    <li key={index} className="page-item disabled">
-                      <span className="page-link">...</span>
-                    </li>
-                  ) : (
-                    <li
-                      key={index}
-                      className={`page-item ${
-                        currentPage === page ? "active" : ""
-                      }`}>
-                      <button
-                        className="page-link"
-                        onClick={() => setCurrentPage(page)}>
-                        {page}
-                      </button>
-                    </li>
-                  )
-                )}
+              {getPageNumbers().map((num, idx) =>
+                num === "..." ? (
+                  <li key={idx} className="page-item disabled">
+                    <span className="page-link">…</span>
+                  </li>
+                ) : (
+                  <li
+                    key={idx}
+                    className={`page-item ${
+                      currentPage === num ? "active" : ""
+                    }`}>
+                    <button
+                      className="page-link"
+                      onClick={() => setCurrentPage(num)}>
+                      {num}
+                    </button>
+                  </li>
+                )
+              )}
 
-                {/* Next */}
-                <li
-                  className={`page-item ${
-                    currentPage === totalPages ? "disabled" : ""
-                  }`}>
-                  <button
-                    className="page-link"
-                    onClick={() => setCurrentPage((prev) => prev + 1)}>
-                    Next
-                  </button>
-                </li>
-              </ul>
-            </nav>
+              <li
+                className={`page-item ${
+                  currentPage === totalPages ? "disabled" : ""
+                }`}>
+                <button
+                  className="page-link"
+                  onClick={() => setCurrentPage((p) => p + 1)}>
+                  Next
+                </button>
+              </li>
+            </ul>
           </div>
-
-          <small>(src: spku tanah sereal - kota bogor)</small>
         </div>
       )}
     </div>
