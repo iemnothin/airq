@@ -1,13 +1,65 @@
+// // src/pages/ContainerPage.jsx
+// import Navigation from "../components/Navigation";
+// import { Outlet } from "react-router-dom";
+
+// const ContainerPage = () => {
+//   return (
+//     <div className="d-flex">
+//       <Navigation />
+
+//       <div className="container-fluid p-0">
+//         <div className="content-wrapper">
+//           <Outlet />
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default ContainerPage;
 // src/pages/ContainerPage.jsx
 import Navigation from "../components/Navigation";
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
 
 const ContainerPage = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  let touchStartX = 0;
+  let touchEndX = 0;
+
+  const handleTouchStart = (e) => {
+    touchStartX = e.changedTouches[0].clientX;
+  };
+
+  const handleTouchMove = (e) => {
+    touchEndX = e.changedTouches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    const distance = touchEndX - touchStartX;
+
+    // Minimal swipe distance
+    if (Math.abs(distance) < 60) return;
+
+    if (distance < 0) {
+      // Swipe LEFT
+      if (location.pathname === "/forecast") navigate("/model");
+    } else {
+      // Swipe RIGHT
+      if (location.pathname === "/model") navigate("/forecast");
+    }
+  };
+
   return (
     <div className="d-flex">
       <Navigation />
 
-      <div className="container-fluid p-0">
+      <div
+        className="container-fluid p-0 swipe-zone"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}>
         <div className="content-wrapper">
           <Outlet />
         </div>

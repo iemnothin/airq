@@ -1,0 +1,3 @@
+.swipe-zone {
+  transform: translateX(var(--swipeX, 0px));
+}
