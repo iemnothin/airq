@@ -1,58 +1,42 @@
 import React from "react";
+import "../css/SkeletonLoader.css";
 
-// Global shimmer style
-const shimmerStyle = {
-  background: "linear-gradient(90deg, #e0e0e0 25%, #f5f5f5 50%, #e0e0e0 75%)",
-  backgroundSize: "200% 100%",
-  animation: "skeletonShimmer 1.2s infinite",
-};
+/* 
+  Semua skeleton menggunakan class global:
+  .premium-skeleton and .fade-in
+  (sudah kamu buat di CSS)
+*/
 
-// Skeleton untuk Card "Hari Ini" (Polutan saat ini)
+/* ======================================================
+   ✅ 1. PREMIUM Skeleton untuk TODAY CARD
+   ====================================================== */
 export const SkeletonLoader = () => {
   return (
-    <div className="col-sm-6 mb-3">
+    <div className="col-12 col-sm-6 mb-3 fade-in">
       <div
-        className="card border-0"
+        className="card border-0 shadow-sm w-100"
         style={{
-          backgroundColor: "#F3F5F7",
+          background: "rgba(255, 255, 255, 0.4)",
+          backdropFilter: "blur(12px)",
+          borderRadius: "16px",
         }}>
-        <div className="card-body text-start">
+        <div className="card-body">
           <div
-            style={{
-              ...shimmerStyle,
-              height: "16px",
-              width: "60px",
-              marginBottom: "8px",
-              borderRadius: "4px",
-            }}></div>
+            className="premium-skeleton mb-2"
+            style={{ height: "18px", width: "45%" }}></div>
+
           <div
-            style={{
-              ...shimmerStyle,
-              height: "10px",
-              width: "100px",
-              marginBottom: "8px",
-              borderRadius: "4px",
-            }}></div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-            }}>
+            className="premium-skeleton mb-3"
+            style={{ height: "12px", width: "70%" }}></div>
+
+          <div className="d-flex gap-3 align-items-center">
             <div
-              style={{
-                ...shimmerStyle,
-                height: "20px",
-                width: "40px",
-                borderRadius: "4px",
-              }}></div>
+              className="premium-skeleton"
+              style={{ height: "24px", width: "25%" }}></div>
+
             <div
-              style={{
-                ...shimmerStyle,
-                height: "10px",
-                width: "30px",
-                borderRadius: "4px",
-              }}></div>
+              className="premium-skeleton"
+              style={{ height: "12px", width: "15%" }}></div>
           </div>
         </div>
       </div>
@@ -60,67 +44,38 @@ export const SkeletonLoader = () => {
   );
 };
 
-// Skeleton untuk Card Forecast Harian
+/* ======================================================
+   ✅ 2. PREMIUM Skeleton untuk DAILY FORECAST HORIZONTAL
+   ====================================================== */
 export const SkeletonLoaderForecast = ({ count = 7 }) => {
   return (
-    <div
-      className="card-container overflow-auto d-flex rounded"
-      style={{ whiteSpace: "nowrap" }}>
+    <div className="d-flex overflow-auto py-2 fade-in">
       {[...Array(count)].map((_, index) => (
         <div
           key={index}
-          className="card mx-2 mb-4"
+          className="card mx-2 shadow-sm"
           style={{
-            minWidth: "200px",
-            border: "0px",
-            borderRadius: "8px",
-            overflow: "hidden",
-            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-            backgroundColor: "#F3F5F7",
+            minWidth: "170px",
+            borderRadius: "16px",
+            background: "rgba(255, 255, 255, 0.35)",
+            backdropFilter: "blur(12px)",
+            border: 0,
           }}>
-          <div
-            className="card-header text-center pb-0"
-            style={{ backgroundColor: "#F3F5F7", border: "0px" }}>
+          <div className="card-body text-center">
             <div
-              style={{
-                ...shimmerStyle,
-                height: "28px",
-                width: "100px",
-                margin: "0 auto",
-                borderRadius: "14px",
-              }}></div>
-          </div>
-          <div className="card-body">
-            <table className="table table-sm">
-              <tbody>
-                {[...Array(7)].map((_, i) => (
-                  <tr key={i}>
-                    <td
-                      className="border-0"
-                      style={{ backgroundColor: "#F3F5F7" }}>
-                      <div
-                        style={{
-                          ...shimmerStyle,
-                          height: "12px",
-                          width: "80px",
-                          borderRadius: "6px",
-                        }}></div>
-                    </td>
-                    <td
-                      className="border-0"
-                      style={{ backgroundColor: "#F3F5F7" }}>
-                      <div
-                        style={{
-                          ...shimmerStyle,
-                          height: "20px",
-                          width: "30px",
-                          borderRadius: "10px",
-                        }}></div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+              className="premium-skeleton mx-auto mb-3"
+              style={{ height: "22px", width: "60%" }}></div>
+
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="d-flex justify-content-between mb-2 px-1">
+                <div
+                  className="premium-skeleton"
+                  style={{ height: "14px", width: "55%" }}></div>
+                <div
+                  className="premium-skeleton"
+                  style={{ height: "14px", width: "22%" }}></div>
+              </div>
+            ))}
           </div>
         </div>
       ))}
@@ -128,83 +83,60 @@ export const SkeletonLoaderForecast = ({ count = 7 }) => {
   );
 };
 
-// Skeleton untuk Card Main Pollutant
+/* ======================================================
+   ✅ 3. PREMIUM Skeleton untuk MAIN POLLUTANT CARD
+   ====================================================== */
 export const SkeletonMainPollutant = () => {
   return (
-    <div className="mb-3">
+    <div className="mb-3 fade-in">
       <div
-        className="card"
+        className="card shadow-sm"
         style={{
-          border: "0px",
-          backgroundColor: "#b0b0b0",
-          boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
+          borderRadius: "18px",
+          background: "rgba(0, 0, 0, 0.35)",
+          backdropFilter: "blur(14px)",
+          color: "#fff",
+          border: 0,
         }}>
-        <div className="card-body text-start text-white">
-          <div className="row d-flex justify-content-between">
-            <div className="col-md-6">
-              <div
-                style={{
-                  ...shimmerStyle,
-                  height: "12px",
-                  width: "80px",
-                  marginBottom: "8px",
-                  borderRadius: "4px",
-                }}></div>
-            </div>
-          </div>
+        <div className="card-body">
+          <div
+            className="premium-skeleton mb-3"
+            style={{ height: "14px", width: "40%" }}></div>
 
-          <hr
-            className="my-1"
-            style={{
-              backgroundColor: "#ffffff",
-              borderWidth: "1px",
-              borderRadius: "5px",
-            }}
-          />
+          <div className="row">
+            <div className="col-7">
+              <div
+                className="premium-skeleton mb-2"
+                style={{ height: "14px", width: "85%" }}></div>
 
-          <div className="row d-flex justify-content-between">
-            <div className="col-6 mb-0">
               <div
-                style={{
-                  ...shimmerStyle,
-                  height: "12px",
-                  width: "100px",
-                  marginBottom: "6px",
-                  borderRadius: "4px",
-                }}></div>
-              <div
-                style={{
-                  ...shimmerStyle,
-                  height: "10px",
-                  width: "140px",
-                  borderRadius: "4px",
-                }}></div>
+                className="premium-skeleton"
+                style={{ height: "10px", width: "100%" }}></div>
             </div>
-            <div className="col-6 text-end mb-0">
+
+            <div className="col-5 text-end">
               <div
+                className="premium-skeleton"
                 style={{
-                  ...shimmerStyle,
                   height: "14px",
-                  width: "60px",
+                  width: "45%",
                   float: "right",
-                  borderRadius: "4px",
                 }}></div>
             </div>
           </div>
         </div>
+
         <div
-          className="card-footer text-start text-dark"
+          className="card-footer"
           style={{
-            fontSize: "10px",
-            backgroundColor: "#F3F5F7",
+            borderRadius: "0 0 18px 18px",
+            background: "rgba(255,255,255,0.15)",
+            backdropFilter: "blur(10px)",
+            border: 0,
           }}>
           <div
-            style={{
-              ...shimmerStyle,
-              height: "10px",
-              width: "130px",
-              borderRadius: "4px",
-            }}></div>
+            className="premium-skeleton"
+            style={{ height: "10px", width: "50%" }}></div>
         </div>
       </div>
     </div>

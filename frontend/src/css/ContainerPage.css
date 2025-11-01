@@ -1,0 +1,13 @@
+/* Desktop layout */
+.content-wrapper {
+  padding: 20px;
+  margin-left: 220px; /* space for sidebar */
+}
+
+/* Mobile layout */
+@media (max-width: 768px) {
+  .content-wrapper {
+    margin-left: 0px !important;
+    padding: 16px !important;
+  }
+}

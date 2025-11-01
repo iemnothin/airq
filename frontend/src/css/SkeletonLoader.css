@@ -1,0 +1,60 @@
+/* ---- PREMIUM SKELETON ANIMATION ---- */
+
+@keyframes premiumShimmer {
+  0% {
+    background-position: -150% 0;
+  }
+  100% {
+    background-position: 150% 0;
+  }
+}
+
+@keyframes pulseGlow {
+  0% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.85;
+  }
+}
+
+.premium-skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(200, 200, 200, 0.14) 25%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(200, 200, 200, 0.14) 75%
+  );
+  background-size: 200% 100%;
+  animation: premiumShimmer 1.4s ease-in-out infinite,
+    pulseGlow 2.4s ease-in-out infinite alternate;
+  border-radius: 10px;
+  backdrop-filter: blur(10px);
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .premium-skeleton {
+    background: linear-gradient(
+      90deg,
+      rgba(80, 80, 80, 0.18) 25%,
+      rgba(120, 120, 120, 0.25) 50%,
+      rgba(80, 80, 80, 0.18) 75%
+    );
+  }
+}
+
+/* Fade-in saat skeleton diganti data */
+.fade-in {
+  animation: fadeIn 0.35s ease forwards;
+  opacity: 0;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}

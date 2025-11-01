@@ -1,25 +1,18 @@
 // src/pages/ContainerPage.jsx
 import Navigation from "../components/Navigation";
+import "../css/ContainerPage.css";
 import { Outlet } from "react-router-dom";
-//
 
 const ContainerPage = () => {
   return (
     <div className="d-flex">
       <Navigation />
-      <>
-        {/* Kontainer Desktop */}
-        <div
-          className="d-none d-md-block"
-          style={{ marginLeft: "220px", padding: "20px", width: "100%" }}>
-          <Outlet />
-        </div>
 
-        {/* Kontainer Mobile */}
-        <div className="d-block d-md-none p-3">
+      <div className="container-fluid p-0">
+        <div className="content-wrapper">
           <Outlet />
         </div>
-      </>
+      </div>
     </div>
   );
 };
