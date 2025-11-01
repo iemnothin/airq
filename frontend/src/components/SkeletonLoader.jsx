@@ -1,12 +1,5 @@
 import React from "react";
 import "../css/SkeletonLoader.css";
-
-/* 
-  Semua skeleton menggunakan class global:
-  .premium-skeleton and .fade-in
-  (sudah kamu buat di CSS)
-*/
-
 /* ======================================================
    ✅ 1. PREMIUM Skeleton untuk TODAY CARD
    ====================================================== */
