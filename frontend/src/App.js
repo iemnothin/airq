@@ -9,17 +9,28 @@ import ModelPage from "./pages/ModelPage";
 import ContainerPage from "./pages/ContainerPage";
 import { useState } from "react";
 
-// 🔹 Komponen Loading & Error dibuat terpisah agar reusable
 import LoadingScreen from "./components/LoadingScreen";
-import ErrorScreen from "./components/ErrorScreen";
-// import Sidebar from "./components/Sidebar";
+import BackendErrPage from "./pages/BackendErrPage";
 
 function App() {
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const [error, setError] = useState(null);
 
+  // ✅ Loading global
   if (loading) return <LoadingScreen />;
-  if (error) return <ErrorScreen message={error} />;
+
+  // ✅ Backend error page (INI YANG KITA MAU)
+  if (error) {
+    return (
+      <BackendErrPage
+        message={error}
+        onRetry={() => {
+          setError(null);
+          window.location.reload();
+        }}
+      />
+    );
+  }
 
   return (
     <Router>
@@ -29,8 +40,11 @@ function App() {
 
         {/* Halaman dengan sidebar */}
         <Route element={<ContainerPage />}>
-          <Route path="/forecast" element={<ForecastPage />} />
-          <Route path="/model" element={<ModelPage />} />
+          <Route
+            path="/forecast"
+            element={<ForecastPage setError={setError} />}
+          />
+          <Route path="/model" element={<ModelPage setError={setError} />} />
         </Route>
       </Routes>
     </Router>

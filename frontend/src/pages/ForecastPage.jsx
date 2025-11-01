@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "../components/Header";
 import TodayCard from "../components/TodayCard";
 import DailyPredictionCard from "../components/DailyPredictionCard";
@@ -11,11 +11,11 @@ import { getColorByISPU, getLevelByISPU } from "../utils/ispuUtils";
 import formatDate from "../utils/formatDate";
 import axios from "axios";
 
-const ForecastPage = () => {
+const ForecastPage = ({ setError }) => {
   const currentTime = useRealtimeClock();
-  const { data: currentAirQuality } = useAirQuality();
-  const { forecast } = useForecast();
-  const { mapeResults } = useMape();
+  const { data: currentAirQuality, error: aqError } = useAirQuality();
+  const { forecast, error: forecastError } = useForecast();
+  const { mapeResults, error: mapeError } = useMape();
 
   const [showPollutantModal, setShowPollutantModal] = useState(false);
   const [showForecastModal, setShowForecastModal] = useState(false);
@@ -25,6 +25,14 @@ const ForecastPage = () => {
   const [loading, setLoading] = useState(false);
   const [selectedPollutant, setSelectedPollutant] = useState(null);
 
+  // ✅ Deteksi error dari hooks (awal fetch)
+  useEffect(() => {
+    if (aqError || forecastError || mapeError) {
+      setError("⚠️ Backend tidak dapat dijangkau. Pastikan server berjalan.");
+    }
+  }, [aqError, forecastError, mapeError, setError]);
+
+  // ✅ Function prediksi
   const getPrediction = async () => {
     if (!selectedDate) return alert("Pilih tanggal terlebih dahulu.");
 
@@ -38,16 +46,25 @@ const ForecastPage = () => {
     );
 
     try {
-      const formattedDate = new Date(selectedDate);
-      const formattedDateString = formattedDate.toISOString().split("T")[0];
+      const formattedDate = new Date(selectedDate).toISOString().split("T")[0];
+
       const res = await axios.get(
-        `http://localhost:8000/api/v1/predict/${formattedDateString}`
+        `http://localhost:8000/api/v1/predict/${formattedDate}`
       );
+
       setSpecificDatePrediction(
         res.data.length > 0 ? res.data : "Tidak ada prediksi untuk tanggal ini."
       );
+
       setProgress(100);
     } catch (err) {
+      console.error("PREDICT ERROR:", err);
+
+      // ✅ Jika backend mati
+      if (err.code === "ERR_NETWORK") {
+        setError("⚠️ Backend offline. Mohon jalankan server FastAPI.");
+      }
+
       setSpecificDatePrediction("Terjadi kesalahan saat memuat prediksi.");
     } finally {
       clearInterval(progressInterval);
