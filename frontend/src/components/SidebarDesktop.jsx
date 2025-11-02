@@ -1,5 +1,4 @@
 import { Link, useLocation } from "react-router-dom";
-import LandingPage from "../pages/LandingPage";
 
 const SidebarDesktop = () => {
   const location = useLocation();

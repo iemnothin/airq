@@ -102,14 +102,14 @@ const OutlierModal = ({ show, onClose, outliers, onHandle, loading }) => {
           </div>
 
           <div className="modal-footer">
-            {outliers.length > 0 && (
+            {/* {outliers.length > 0 && (
               <button
                 className="btn btn-warning"
                 onClick={onHandle}
                 disabled={loading}>
                 {loading ? "Now handling outlier..." : "Tangani"}
               </button>
-            )}
+            )} */}
             <button className="btn btn-secondary" onClick={onClose}>
               Tutup
             </button>
