@@ -1,4 +1,4 @@
-// src/helpers/outlierHelper.js
+// src/helpers/OutlierHelper.jsx
 export const fetchOutliers = async (API_BASE) => {
   try {
     const res = await fetch(`${API_BASE}/data/outliers`);
@@ -8,5 +8,18 @@ export const fetchOutliers = async (API_BASE) => {
   } catch (err) {
     console.error(err);
     return [];
+  }
+};
+
+export const handleOutliers = async (API_BASE) => {
+  try {
+    const res = await fetch(`${API_BASE}/data/outliers-handle`, {
+      method: "POST",
+    });
+    if (!res.ok) throw new Error("Gagal menangani outlier");
+    return await res.json();
+  } catch (err) {
+    console.error(err);
+    return { message: "Gagal menangani outlier" };
   }
 };

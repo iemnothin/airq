@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../css/ModelPage.css";
 import OutlierModal from "../components/OutlierModal";
-
-import { fetchOutliers } from "../helpers/OutlierHelper";
+import { fetchOutliers, handleOutliers } from "../helpers/OutlierHelper";
 
 const API_BASE = "http://localhost:8000/api/v1";
 
@@ -14,6 +13,7 @@ const ModelPage = ({ setError }) => {
   const [uploadedData, setUploadedData] = useState([]);
   const [showToast, setShowToast] = useState(false);
   const [outliers, setOutliers] = useState([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showOutlierModal, setShowOutlierModal] = useState(false);
 
   // Info cards
@@ -85,9 +85,11 @@ const ModelPage = ({ setError }) => {
       if (!resInfo.ok) throw new Error();
       const infoData = await resInfo.json();
       setInfo({
-        totalData: Array.isArray(data) ? data.length : 0,
+        totalData: infoData.totalData,
         outlierClear: infoData.outlierClear,
         nanClear: infoData.nanClear,
+        outlierCount: infoData.outlierCount ?? 0, // default 0
+        nanCount: infoData.nanCount ?? 0, // default 0
       });
     } catch {
       setUploadedData([]);
@@ -133,6 +135,9 @@ const ModelPage = ({ setError }) => {
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
       fetchUploadedData();
+      // Ambil outlier terbaru
+      const outlierData = await fetchOutliers(API_BASE);
+      setOutliers(outlierData);
     };
     xhr.onerror = () => {
       setError("Tidak dapat menghubungi backend.");
@@ -178,6 +183,24 @@ const ModelPage = ({ setError }) => {
     }
   };
 
+  const handleDeleteAll = async () => {
+    setIsUploading(true);
+    try {
+      const res = await fetch(`${API_BASE}/data/delete-all`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Gagal menghapus data");
+      await fetchUploadedData();
+      setOutliers([]);
+      setShowDeleteModal(false); // tutup modal setelah sukses
+    } catch (err) {
+      console.error(err);
+      alert("Gagal menghapus data."); // bisa diganti toast nanti
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   return (
     <>
       <div className="container px-0 py-4">
@@ -191,57 +214,63 @@ const ModelPage = ({ setError }) => {
         {/* ================= INFO CARDS ================= */}
         {uploadedData.length > 0 && (
           <div className="row mb-4">
+            {/* Jumlah Data */}
             <div className="col-md-4 mb-2">
-              <div className="card text-white bg-primary h-100">
+              <div className="card bg-primary h-100">
                 <div className="card-body d-flex align-items-center gap-3">
-                  <i className="bi bi-database fs-2"></i>
+                  <i className="fas fa-database fs-2"></i>
                   <div>
-                    <h6 className="card-title">Jumlah Data</h6>
+                    <h5 className="card-title fw-bold">Jumlah Data</h5>
                     <p className="card-text fs-5">{info.totalData}</p>
                   </div>
                 </div>
               </div>
             </div>
+
+            {/* Status Outlier */}
             <div className="col-md-4 mb-2">
               <div
                 className={`card h-100 text-white ${
-                  info.outlierClear ? "bg-success" : "bg-danger"
+                  info.outlierCount === 0 ? "bg-success" : "bg-danger"
                 }`}
-                style={{ cursor: "pointer" }} // <-- ubah cursor biar terlihat klikable
-                onClick={handleOutlierClick} // <-- event handler
-              >
+                style={{ cursor: "pointer" }}
+                onClick={handleOutlierClick}>
                 <div className="card-body d-flex align-items-center gap-3">
                   <i
-                    className={`bi ${
-                      info.outlierClear
-                        ? "bi-check-circle"
-                        : "bi-exclamation-triangle"
+                    className={`fas ${
+                      info.outlierCount === 0
+                        ? "fa-check-circle"
+                        : "fa-exclamation-triangle"
                     } fs-2`}></i>
                   <div>
-                    <h6 className="card-title">Status Outlier</h6>
+                    <h5 className="card-title fw-bold">Status Outlier</h5>
                     <p className="card-text fs-5">
-                      {info.outlierClear ? "Clear" : "Ada Outlier"}
+                      {info.outlierCount === 0
+                        ? "Clear"
+                        : `${info.outlierCount} data`}
                     </p>
                   </div>
                 </div>
               </div>
             </div>
+
+            {/* Status NaN / Null */}
             <div className="col-md-4 mb-2">
               <div
                 className={`card h-100 text-white ${
-                  info.nanClear ? "bg-success" : "bg-warning"
+                  info.nanCount === 0 ? "bg-success" : "bg-warning"
                 }`}>
                 <div className="card-body d-flex align-items-center gap-3">
                   <i
-                    className={`bi ${
-                      info.nanClear
-                        ? "bi-check-circle"
-                        : "bi-exclamation-triangle"
+                    className={`fas ${
+                      info.nanCount === 0
+                        ? "fa-check-circle"
+                        : "fa-exclamation-triangle"
                     } fs-2`}></i>
                   <div>
-                    <h6 className="card-title">Status NaN / Null</h6>
+                    <h5 className="card-title fw-bold">Status NaN / Null</h5>
                     <p className="card-text fs-5">
-                      {info.nanClear ? "Clear" : "Ada Null / NaN"}
+                      {info.nanCount === 0 ? "Clear" : `${info.nanCount} data`}
                     </p>
                   </div>
                 </div>
@@ -254,10 +283,14 @@ const ModelPage = ({ setError }) => {
         {uploadedData.length > 0 ? (
           <div className="model-grid">
             {/* LEFT SIDE: Form Upload */}
-            <div className="upload-side">
-              <h5 className="text-center mb-4 text-success fw-bold">
+            <div
+              className="upload-side p-4 rounded shadow"
+              style={{ backgroundColor: "#f8f9fa" }}>
+              <p
+                className="text-center mb-4 fs-5 fw-bold"
+                style={{ color: "#3B82F6" }}>
                 Upload Data Kualitas Udara (CSV)
-              </h5>
+              </p>
               <form onSubmit={handleSubmit} className="upload-box">
                 <div className="mb-3">
                   <input
@@ -289,10 +322,94 @@ const ModelPage = ({ setError }) => {
 
             {/* RIGHT SIDE: Table */}
             <div className="table-side">
-              <h5 className="text-center mb-3 text-secondary">
+              <h5
+                className="text-center mb-3 fs-5 fw-bold"
+                style={{ color: "#3B82F6" }}>
                 Data Kualitas Udara Kota Bogor
               </h5>
-              <small>(src: SPKU Tanah Sereal - kota bogor)</small>
+
+              {/* ===== Tombol Tangani & Hapus Outlier ===== */}
+              {uploadedData.length > 0 && (
+                <div className="d-flex justify-content-between gap-3 mb-2">
+                  <small className="text-secondary fw-bold">
+                    (src: SPKU Tanah Sereal - Kota Bogor)
+                  </small>
+
+                  <div className="d-flex flex-row align-items-center justify-content-center gap-2">
+                    {/* Tangani Outlier */}
+                    {outliers.length > 0 && (
+                      <button
+                        className="btn btn-warning btn-sm d-flex align-items-center justify-content-center gap-1"
+                        style={{ minWidth: "150px" }}
+                        onClick={async () => {
+                          setIsUploading(true);
+                          await handleOutliers(API_BASE);
+                          await fetchUploadedData();
+                          const updatedOutliers = await fetchOutliers(API_BASE);
+                          setOutliers(updatedOutliers);
+                          setIsUploading(false);
+                        }}
+                        disabled={isUploading}>
+                        <i className="fas fa-cogs"></i>
+                        {isUploading ? "Now handling..." : "Handle Outlier"}
+                      </button>
+                    )}
+
+                    {/* Hapus Semua Data */}
+                    <button
+                      className="btn btn-danger btn-sm d-flex align-items-center justify-content-center gap-1"
+                      style={{ minWidth: "150px" }}
+                      onClick={() => setShowDeleteModal(true)}
+                      disabled={isUploading}>
+                      <i className="fas fa-trash-alt"></i>
+                      {isUploading ? "Deleting..." : "Hapus Data"}
+                    </button>
+
+                    {/* Modal Konfirmasi */}
+                    {showDeleteModal && (
+                      <div
+                        className="modal show d-block"
+                        tabIndex="-1"
+                        style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+                        onClick={() => setShowDeleteModal(false)}>
+                        <div
+                          className="modal-dialog modal-dialog-centered"
+                          onClick={(e) => e.stopPropagation()}>
+                          <div className="modal-content">
+                            <div className="modal-header bg-danger text-white">
+                              <h5 className="modal-title">
+                                Konfirmasi Hapus Data
+                              </h5>
+                              <button
+                                type="button"
+                                className="btn-close"
+                                onClick={() =>
+                                  setShowDeleteModal(false)
+                                }></button>
+                            </div>
+                            <div className="modal-body">
+                              <p>⚠️ Yakin ingin menghapus semua data?</p>
+                            </div>
+                            <div className="modal-footer">
+                              <button
+                                className="btn btn-secondary"
+                                onClick={() => setShowDeleteModal(false)}>
+                                Batal
+                              </button>
+                              <button
+                                className="btn btn-danger"
+                                onClick={handleDeleteAll}
+                                disabled={isUploading}>
+                                {isUploading ? "Deleting..." : "Hapus"}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="table-responsive" style={{ maxHeight: "500px" }}>
                 <table className="table table-bordered table-striped">
@@ -393,36 +510,43 @@ const ModelPage = ({ setError }) => {
           </div>
         ) : (
           // Centered form
-          <form
-            onSubmit={handleSubmit}
-            className="upload-box mx-auto mt-3"
-            style={{ maxWidth: "500px" }}>
-            <div className="mb-3">
-              <input
-                type="file"
-                accept=".csv"
-                className="form-control model-file-input"
-                onChange={handleFileChange}
-              />
-            </div>
-            <button
-              type="submit"
-              className="btn btn-success w-100"
-              disabled={isUploading}>
-              {isUploading ? "Mengupload..." : "Upload CSV"}
-            </button>
-            {isUploading && (
-              <div className="mt-3">
-                <div className="progress" style={{ height: "25px" }}>
-                  <div
-                    className="progress-bar progress-bar-striped progress-bar-animated bg-info"
-                    style={{ width: `${uploadProgress}%` }}>
-                    Upload File: {uploadProgress}%
+          <>
+            <h3
+              className="text-center mb-4 fw-bold"
+              style={{ color: "#3B82F6" }}>
+              Upload Data Kualitas Udara (CSV)
+            </h3>
+            <form
+              onSubmit={handleSubmit}
+              className="upload-box mx-auto mt-3"
+              style={{ maxWidth: "500px" }}>
+              <div className="mb-3">
+                <input
+                  type="file"
+                  accept=".csv"
+                  className="form-control model-file-input"
+                  onChange={handleFileChange}
+                />
+              </div>
+              <button
+                type="submit"
+                className="btn btn-success w-100"
+                disabled={isUploading}>
+                {isUploading ? "Mengupload..." : "Upload CSV"}
+              </button>
+              {isUploading && (
+                <div className="mt-3">
+                  <div className="progress" style={{ height: "25px" }}>
+                    <div
+                      className="progress-bar progress-bar-striped progress-bar-animated bg-info"
+                      style={{ width: `${uploadProgress}%` }}>
+                      Upload File: {uploadProgress}%
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </form>
+              )}
+            </form>
+          </>
         )}
       </div>
 

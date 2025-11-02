@@ -405,8 +405,10 @@ def get_data_info():
     """
     Mengembalikan info untuk card:
     - totalData
-    - outlierClear (cek ada nilai outlier/tidak)
-    - nanClear (cek ada NaN/Null value atau tidak)
+    - outlierClear
+    - nanClear
+    - outlierCount
+    - nanCount
     """
     try:
         conn = get_db_connection()
@@ -421,7 +423,9 @@ def get_data_info():
             return JSONResponse(content={
                 "totalData": 0,
                 "outlierClear": True,
-                "nanClear": True
+                "nanClear": True,
+                "outlierCount": 0,
+                "nanCount": 0
             })
 
         df = pd.DataFrame(rows)
@@ -430,23 +434,29 @@ def get_data_info():
         total_data = len(df)
 
         # Cek NaN / Null
-        nan_clear = not df.isnull().values.any()
+        nan_mask = df.isnull()
+        nan_clear = not nan_mask.values.any()
+        nan_count = nan_mask.sum().sum()  # jumlah total sel NaN
 
-        # Cek outlier (misal sederhana: data > 3 std dev dari mean)
-        outlier_clear = True
+        # Cek outlier (misal sederhana: > 3 std dev dari mean)
         numeric_cols = ["pm10","pm25","so2","co","o3","no2","hc","kelembaban","suhu"]
+        outlier_mask = pd.DataFrame(False, index=df.index, columns=numeric_cols)
+
         for col in numeric_cols:
             if col in df.columns:
                 mean = df[col].mean()
                 std = df[col].std()
-                if ((df[col] - mean).abs() > 3*std).any():
-                    outlier_clear = False
-                    break
+                outlier_mask[col] = (df[col] - mean).abs() > 3*std
+
+        outlier_clear = not outlier_mask.values.any()
+        outlier_count = outlier_mask.values.sum()  # total jumlah outlier
 
         return JSONResponse(content={
             "totalData": total_data,
             "outlierClear": outlier_clear,
-            "nanClear": nan_clear
+            "nanClear": nan_clear,
+            "outlierCount": int(df[numeric_cols].apply(lambda x: ((x - x.mean()).abs() > 3*x.std()).sum()).sum()),
+            "nanCount": int(df.isnull().sum().sum())
         })
 
     except Exception as e:
@@ -498,4 +508,85 @@ def get_outliers():
 
     except Exception as e:
         traceback.print_exc()
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+# backend tetap seperti yang sudah kamu tulis
+@app.post("/api/v1/data/outliers-handle")
+def handle_outliers():
+    """
+    Menangani outlier:
+    - Interpolasi linear untuk nilai numeric yang outlier
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # Ambil semua data
+        cursor.execute("SELECT * FROM air_quality_data ORDER BY waktu ASC")
+        rows = cursor.fetchall()
+
+        if not rows:
+            cursor.close()
+            conn.close()
+            return JSONResponse(content={"message": "Tidak ada data"})
+
+        df = pd.DataFrame(rows)
+        df["waktu"] = pd.to_datetime(df["waktu"])
+
+        numeric_cols = ["pm10","pm25","so2","co","o3","no2","hc","kelembaban","suhu"]
+
+        # Deteksi outlier
+        outlier_mask = pd.DataFrame(False, index=df.index, columns=numeric_cols)
+        for col in numeric_cols:
+            if col not in df.columns:
+                continue
+            mean = df[col].mean()
+            std = df[col].std()
+            outlier_mask[col] = (df[col] - mean).abs() > 3*std
+
+        if not outlier_mask.values.any():
+            cursor.close()
+            conn.close()
+            return JSONResponse(content={"message": "Tidak ada outlier"})
+
+        # Interpolasi
+        for col in numeric_cols:
+            if col in df.columns:
+                df.loc[outlier_mask[col], col] = None
+                df[col] = df[col].interpolate(method='linear', limit_direction='both')
+
+        # Update DB
+        for _, row in df.iterrows():
+            update_sql = """
+                UPDATE air_quality_data
+                SET pm10=%s, pm25=%s, so2=%s, co=%s, o3=%s, no2=%s, hc=%s,
+                    kelembaban=%s, suhu=%s
+                WHERE id=%s
+            """
+            cursor.execute(update_sql, (
+                row["pm10"], row["pm25"], row["so2"], row["co"], row["o3"], row["no2"], row["hc"],
+                row["kelembaban"], row["suhu"], row["id"]
+            ))
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+
+        return JSONResponse(content={"message": f"{outlier_mask.values.sum()} nilai outlier berhasil diinterpolasi"})
+
+    except Exception as e:
+        traceback.print_exc()
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+@app.delete("/api/v1/data/delete-all")
+def delete_all_data():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM air_quality_data")
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return {"message": "Semua data berhasil dihapus"}
+    except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)

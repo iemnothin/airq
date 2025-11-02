@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from "react";
-import "../css/OutlierModal.css";
+// src/components/OutlierModal.jsx
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const customHeaderMap = {
@@ -38,45 +37,33 @@ const formatTanggalIndonesia = (dateString) => {
   } ${date.getFullYear()}`;
 };
 
-const OutlierModal = ({ show, onClose, outliers, outlierClear }) => {
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    if (show) setIsVisible(true);
-  }, [show]);
-
-  const handleClose = () => {
-    setIsVisible(false);
-    setTimeout(onClose, 300); // delay agar animasi selesai
-  };
-
-  const handleBackdropClick = (e) => {
-    if (e.target.classList.contains("outlier-modal-backdrop")) {
-      handleClose();
-    }
-  };
-
-  if (!show && !isVisible) return null;
+const OutlierModal = ({ show, onClose, outliers, onHandle, loading }) => {
+  if (!show) return null;
 
   return (
     <div
-      className={`modal show fade d-block outlier-modal-backdrop ${
-        isVisible ? "fade-in" : "fade-out"
-      }`}
+      className="modal show fade d-block"
       tabIndex="-1"
-      onClick={handleBackdropClick}>
-      <div className="modal-dialog modal-xl modal-dialog-centered outlier-modal-dialog">
+      style={{
+        backgroundColor: "rgba(0,0,0,0.5)",
+        width: "100vw",
+        height: "100vh",
+      }}
+      onClick={onClose} // klik backdrop tutup modal
+    >
+      <div
+        className="modal-dialog modal-xl modal-dialog-centered"
+        onClick={(e) => e.stopPropagation()} // cegah klik di konten tutup modal
+      >
         <div className="modal-content">
-          <div
-            className={`modal-header text-white ${
-              outlierClear ? "bg-success" : "bg-danger"
-            }`}>
+          <div className="modal-header bg-danger text-white">
             <h5 className="modal-title">Data Outlier</h5>
             <button
               type="button"
               className="btn-close"
-              onClick={handleClose}></button>
+              onClick={onClose}></button>
           </div>
+
           <div className="modal-body">
             {outliers.length === 0 ? (
               <p>Tidak ada data outlier.</p>
@@ -113,8 +100,17 @@ const OutlierModal = ({ show, onClose, outliers, outlierClear }) => {
               </div>
             )}
           </div>
+
           <div className="modal-footer">
-            <button className="btn btn-secondary" onClick={handleClose}>
+            {outliers.length > 0 && (
+              <button
+                className="btn btn-warning"
+                onClick={onHandle}
+                disabled={loading}>
+                {loading ? "Now handling outlier..." : "Tangani"}
+              </button>
+            )}
+            <button className="btn btn-secondary" onClick={onClose}>
               Tutup
             </button>
           </div>
