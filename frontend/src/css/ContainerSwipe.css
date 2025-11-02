@@ -1,3 +1,7 @@
 .swipe-zone {
-  transform: translateX(var(--swipeX, 0px));
+  pointer-events: auto;
+}
+
+.navigation {
+  pointer-events: auto;
 }

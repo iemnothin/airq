@@ -53,10 +53,10 @@ const ContainerPage = () => {
 
   return (
     <div className="d-flex">
-      <Navigation />
+      <Navigation className="flex-shrink-0" />
 
       <div
-        className="container-fluid p-0 swipe-zone"
+        className="flex-grow-1 container-fluid p-0 swipe-zone"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}>
