@@ -397,3 +397,105 @@ def get_csv_data():
     except Exception as e:
         print("ERROR get data:", e)
         return JSONResponse({"error": str(e)}, status_code=500)
+
+# === Tambahkan di bagian ROUTES ===
+
+@app.get("/api/v1/data/info")
+def get_data_info():
+    """
+    Mengembalikan info untuk card:
+    - totalData
+    - outlierClear (cek ada nilai outlier/tidak)
+    - nanClear (cek ada NaN/Null value atau tidak)
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("SELECT * FROM air_quality_data")
+        rows = cursor.fetchall()
+        cursor.close()
+        conn.close()
+
+        if not rows:
+            return JSONResponse(content={
+                "totalData": 0,
+                "outlierClear": True,
+                "nanClear": True
+            })
+
+        df = pd.DataFrame(rows)
+
+        # Total data
+        total_data = len(df)
+
+        # Cek NaN / Null
+        nan_clear = not df.isnull().values.any()
+
+        # Cek outlier (misal sederhana: data > 3 std dev dari mean)
+        outlier_clear = True
+        numeric_cols = ["pm10","pm25","so2","co","o3","no2","hc","kelembaban","suhu"]
+        for col in numeric_cols:
+            if col in df.columns:
+                mean = df[col].mean()
+                std = df[col].std()
+                if ((df[col] - mean).abs() > 3*std).any():
+                    outlier_clear = False
+                    break
+
+        return JSONResponse(content={
+            "totalData": total_data,
+            "outlierClear": outlier_clear,
+            "nanClear": nan_clear
+        })
+
+    except Exception as e:
+        traceback.print_exc()
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+@app.get("/api/v1/data/outliers")
+def get_outliers():
+    """
+    Mengembalikan daftar outlier:
+    - id
+    - kolom
+    - nilai
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("SELECT * FROM air_quality_data")
+        rows = cursor.fetchall()
+        cursor.close()
+        conn.close()
+
+        if not rows:
+            return []
+
+        df = pd.DataFrame(rows)
+
+        numeric_cols = ["pm10","pm25","so2","co","o3","no2","hc","kelembaban","suhu"]
+
+        outliers = []
+
+        for col in numeric_cols:
+            if col not in df.columns:
+                continue
+
+            mean = df[col].mean()
+            std = df[col].std()
+            # deteksi outlier >3 std dev dari mean
+            mask = (df[col] - mean).abs() > 3*std
+            for idx in df[mask].index:
+                outliers.append({
+                    "id": int(df.loc[idx, "id"]),
+                    "Kolom": col,
+                    "Nilai": df.loc[idx, col]
+                })
+
+        return JSONResponse(content=outliers)
+
+    except Exception as e:
+        traceback.print_exc()
+        return JSONResponse(content={"error": str(e)}, status_code=500)

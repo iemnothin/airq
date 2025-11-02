@@ -115,3 +115,37 @@
     left: 5% !important;
   }
 }
+/* ============================
+   GRID MODE (Data Ada)
+   ============================ */
+.model-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 24px;
+}
+
+/* Upload box styling */
+.upload-box {
+  padding: 18px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+/* ============================
+   MOBILE (Stack Layout)
+   ============================ */
+@media (max-width: 768px) {
+  .model-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .upload-side {
+    order: 1;
+  }
+
+  .table-side {
+    order: 2;
+  }
+}
