@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../css/ModelPage.css";
 import OutlierModal from "../components/OutlierModal";
+import NoFileModal from "../components/NoFileModal";
 import { fetchOutliers, handleOutliers } from "../helpers/OutlierHelper";
 
 const API_BASE = "http://localhost:8000/api/v1";
@@ -15,6 +16,7 @@ const ModelPage = ({ setError }) => {
   const [outliers, setOutliers] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showOutlierModal, setShowOutlierModal] = useState(false);
+  const [showNoFileModal, setShowNoFileModal] = useState(false);
 
   // Info cards
   const [info, setInfo] = useState({
@@ -117,7 +119,11 @@ const ModelPage = ({ setError }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!file) return alert("Pilih file CSV terlebih dahulu!");
+    // if (!file) return alert("Pilih file CSV terlebih dahulu!");
+    if (!file) {
+      setShowNoFileModal(true);
+      return;
+    }
     const formData = new FormData();
     formData.append("file", file);
     setIsUploading(true);
@@ -211,6 +217,11 @@ const ModelPage = ({ setError }) => {
           outlierClear={info.outlierClear}
         />
 
+        <NoFileModal
+          show={showNoFileModal}
+          onClose={() => setShowNoFileModal(false)}
+        />
+
         {/* ================= INFO CARDS ================= */}
         {uploadedData.length > 0 && (
           <div className="row mb-4">
@@ -302,7 +313,7 @@ const ModelPage = ({ setError }) => {
                 </div>
                 <button
                   type="submit"
-                  className="btn btn-success w-100"
+                  className="btn btn-primary w-100"
                   disabled={isUploading}>
                   {isUploading ? "Mengupload..." : "Upload CSV"}
                 </button>
@@ -530,7 +541,7 @@ const ModelPage = ({ setError }) => {
               </div>
               <button
                 type="submit"
-                className="btn btn-success w-100"
+                className="btn btn-primary w-100"
                 disabled={isUploading}>
                 {isUploading ? "Mengupload..." : "Upload CSV"}
               </button>
