@@ -124,6 +124,7 @@ const ModelPage = ({ setError }) => {
       setShowNoFileModal(true);
       return;
     }
+
     const formData = new FormData();
     formData.append("file", file);
     setIsUploading(true);
