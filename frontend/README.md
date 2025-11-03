@@ -1,3 +1,85 @@
+# Frontend (AirQ) — Dokumentasi
+
+> Frontend aplikasi AirQ dibangun dengan React (Create React App). Menyediakan UI untuk melihat prediksi kualitas udara, mengelola data, mengunggah CSV, dan menampilkan visualisasi.
+
+## Ringkasan
+
+- Framework: React (Create React App)
+- Bahasa: JavaScript (JSX)
+- Package manager: npm
+- Port development default: 3000
+
+File utama: `src/` berisi komponen, hooks, pages, dan utilities.
+
+## Persyaratan
+
+- Node.js (LTS recommended) dan npm
+
+## Persiapan & menjalankan (Windows PowerShell)
+
+1. Masuk ke folder frontend:
+
+```powershell
+cd frontend
+```
+
+2. Install dependency:
+
+```powershell
+npm install
+```
+
+3. Jalankan aplikasi untuk development:
+
+```powershell
+npm start
+```
+
+Ini akan membuka app di `http://localhost:3000` secara default.
+
+Untuk build produksi:
+
+```powershell
+npm run build
+```
+
+## Konfigurasi API
+
+Frontend melakukan panggilan HTTP ke backend (axios). Default asumsi backend berada di `http://localhost:8000`.
+
+Jika ingin mengubah URL backend, Anda bisa:
+
+- Cari konfigurasi base URL di kode (mis. penggunaan `axios` di hook `useAirQuality` atau file util axios). Ubah menjadi endpoint backend Anda.
+- Atau tambahkan variable environment saat menjalankan:
+
+```powershell
+$env:REACT_APP_API_URL = "http://localhost:8000"; npm start
+```
+
+Kemudian gunakan `process.env.REACT_APP_API_URL` di kode jika diimplementasikan.
+
+## Struktur proyek penting
+
+- `src/components/` — komponen UI (cards, charts, navigation)
+- `src/hooks/` — custom hooks untuk fetching data dan logika (mis. `useAirQuality.jsx`, `useForecast.jsx`)
+- `src/pages/` — halaman yang dirender pada route tertentu
+- `public/` — static file (index.html, manifest, favicon)
+
+## Skrip NPM
+
+- `npm start` — jalankan development server
+- `npm run build` — buat bundle produksi
+- `npm test` — jalankan test runner (default CRA)
+
+## Troubleshooting
+
+- Jika tidak bisa terhubung ke backend: pastikan backend berjalan di port yang benar (`8000`), periksa CORS (backend `main.py` mengizinkan all origins pada konfigurasi saat ini).
+- Build error: periksa versi Node/npm dan hapus `node_modules` lalu `npm install` ulang.
+- Jika data tidak muncul: periksa network tab di devtools dan endpoint backend yang dipanggil.
+
+## Catatan pengembangan
+
+- Komponen dan hooks ditulis untuk kebutuhan UI dan fetch; jika menambahkan endpoint baru, tambahkan hook/fetcher baru dan perbarui komponen yang membutuhkan.
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
