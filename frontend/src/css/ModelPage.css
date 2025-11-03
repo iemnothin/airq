@@ -153,6 +153,26 @@
 /* ============================
    STATUS BACKGROUNDS
    ============================ */
+.btn-primary {
+  background-color: #cce5ff !important;
+  color: #084298 !important;
+}
+
+.btn-danger {
+  background-color: #f8d7da !important;
+  color: #992828 !important;
+}
+
+.btn-success {
+  background-color: #d1f3d3 !important;
+  color: #27632a !important;
+}
+
+.btn-warning {
+  background-color: #fff3cd !important;
+  color: #664d03 !important;
+}
+
 .bg-primary {
   background-color: #cce5ff !important;
   color: #084298 !important;
@@ -166,4 +186,9 @@
 .bg-success {
   background-color: #d1f3d3 !important;
   color: #27632a !important;
+}
+
+.bg-warning {
+  background-color: #fff3cd !important;
+  color: #664d03 !important;
 }
