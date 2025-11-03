@@ -28,7 +28,7 @@ const SidebarDesktop = () => {
           alt="logo-AirQ"
           style={{ width: "60px", marginBottom: "10px" }}
         />
-        <div>AirQ</div>
+        <div className="text-primary">AirQ</div>
       </Link>
 
       <ul className="nav nav-pills flex-column mb-auto">
@@ -38,7 +38,7 @@ const SidebarDesktop = () => {
               to={item.path}
               className={`nav-link d-flex align-items-center ${
                 location.pathname === item.path
-                  ? "active bg-success text-white"
+                  ? "active bg-primary text-white"
                   : "text-dark"
               }`}>
               <i className={`fas ${item.icon} me-2`}></i>
