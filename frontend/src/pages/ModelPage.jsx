@@ -348,6 +348,50 @@ const ModelPage = ({ setError }) => {
                   </small>
 
                   <div className="d-flex flex-row align-items-center justify-content-center gap-2">
+                    {/* Forecast */}
+                    <button
+                      className="btn btn-info btn-sm d-flex align-items-center justify-content-center gap-1"
+                      style={{ minWidth: "180px" }}
+                      onClick={async () => {
+                        setIsUploading(true);
+                        try {
+                          const res = await fetch(
+                            `${API_BASE}/model/process-basic`,
+                            { method: "POST" }
+                          );
+                          const data = await res.json();
+                          console.log("Basic model result:", data);
+                          alert("✅ Basic model processed!");
+                        } finally {
+                          setIsUploading(false);
+                        }
+                      }}>
+                      <i className="fas fa-magic"></i>
+                      Forecast Basic
+                    </button>
+
+                    {/* Forecast with Parameters */}
+                    <button
+                      className="btn btn-success btn-sm d-flex align-items-center justify-content-center gap-1"
+                      style={{ minWidth: "220px" }}
+                      onClick={async () => {
+                        setIsUploading(true);
+                        try {
+                          const res = await fetch(
+                            `${API_BASE}/model/process-advanced`,
+                            { method: "POST" }
+                          );
+                          const data = await res.json();
+                          console.log("Advanced model:", data);
+                          alert("✅ Advanced model processed with tuning!");
+                        } finally {
+                          setIsUploading(false);
+                        }
+                      }}>
+                      <i className="fas fa-cogs"></i>
+                      With Parameters
+                    </button>
+
                     {/* Tangani Outlier */}
                     {outliers.length > 0 && (
                       <button

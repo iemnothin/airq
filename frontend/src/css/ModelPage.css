@@ -185,6 +185,11 @@
   color: #664d03 !important;
 }
 
+.btn-info {
+  background-color: #cff4fc !important;
+  color: #055160 !important;
+}
+
 .bg-primary {
   background-color: #cce5ff !important;
   color: #084298 !important;

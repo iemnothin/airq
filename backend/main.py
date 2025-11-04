@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 from datetime import datetime
 from prophet import Prophet
 from prophet.diagnostics import cross_validation
+from prophet.serialize import model_to_json, model_from_json
 from sklearn.metrics import mean_absolute_percentage_error
 from prophet.make_holidays import make_holidays_df
 import pandas as pd
@@ -13,9 +14,11 @@ import mysql.connector
 from fastapi import Request
 from fastapi import File, UploadFile
 import csv
+from sklearn.model_selection import ParameterGrid
 from fastapi.responses import StreamingResponse
 import io, time, threading
 from pydantic import BaseModel
+import numpy as np
 
 # === Koneksi ke Database ===
 def get_db_connection():
@@ -590,3 +593,131 @@ def delete_all_data():
         return {"message": "Semua data berhasil dihapus"}
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
+
+@app.post("/api/v1/model/process-basic")
+def process_basic_model():
+    """
+    Train model Facebook Prophet basic (tanpa tuning).
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("SELECT waktu, pm10 FROM air_quality_data ORDER BY waktu ASC")
+        rows = cursor.fetchall()
+        cursor.close()
+        conn.close()
+
+        if not rows:
+            return JSONResponse({"error": "Tidak ada data untuk diproses"}, 400)
+
+        df = pd.DataFrame(rows)
+        df["waktu"] = pd.to_datetime(df["waktu"])
+        df = df.rename(columns={"waktu": "ds", "pm10": "y"})
+
+        model = Prophet(
+            yearly_seasonality=True,
+            weekly_seasonality=True,
+            daily_seasonality=False
+        )
+
+        model.fit(df)
+
+        future = model.make_future_dataframe(periods=30)
+        forecast = model.predict(future)
+
+        return JSONResponse({
+            "message": "Basic model processed successfully",
+            "forecast": forecast[["ds", "yhat", "yhat_lower", "yhat_upper"]].tail(30).to_dict(orient="records")
+        })
+
+    except Exception as e:
+        traceback.print_exc()
+        return JSONResponse({"error": str(e)}, 500)
+
+@app.post("/api/v1/model/process-advanced")
+def process_advanced_model():
+    """
+    Train model Prophet dengan:
+    - Holiday Indonesia
+    - Seasonality tambahan
+    - Bayesian Optimization (grid search sederhana)
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("SELECT waktu, pm10 FROM air_quality_data ORDER BY waktu ASC")
+        rows = cursor.fetchall()
+        cursor.close()
+        conn.close()
+
+        if not rows:
+            return JSONResponse({"error": "Tidak ada data untuk diproses"}, 400)
+
+        df = pd.DataFrame(rows)
+        df["waktu"] = pd.to_datetime(df["waktu"])
+        df = df.rename(columns={"waktu": "ds", "pm10": "y"})
+
+        # -----------------------------
+        # PARAMETER GRID (Bayesian-like)
+        # -----------------------------
+        param_grid = {
+            'changepoint_prior_scale': [0.01, 0.1, 0.5],
+            'seasonality_prior_scale': [1.0, 5.0, 10.0],
+        }
+
+        grid = ParameterGrid(param_grid)
+        best_mape = np.inf
+        best_model = None
+
+        # -----------------------------
+        # LOOP TUNING
+        # -----------------------------
+        for params in grid:
+            model = Prophet(
+                holidays=make_holidays_df(year_list=[2022, 2023, 2024], country="ID"),
+                yearly_seasonality=True,
+                weekly_seasonality=True,
+                daily_seasonality=False,
+                changepoint_prior_scale=params["changepoint_prior_scale"],
+                seasonality_prior_scale=params["seasonality_prior_scale"]
+            )
+
+            model.add_seasonality("monthly", period=30.5, fourier_order=5)
+
+            model.fit(df)
+
+            # forecast untuk validasi
+            future = model.make_future_dataframe(periods=30)
+            forecast = model.predict(future)
+
+            df_eval = df.tail(30)
+            pred = forecast.tail(30)["yhat"].values
+            real = df_eval["y"].values
+
+            mape = np.mean(np.abs((real - pred) / real)) * 100
+
+            if mape < best_mape:
+                best_mape = mape
+                best_model = model
+
+        # -----------------------------
+        # FINAL FORECAST
+        # -----------------------------
+        future = best_model.make_future_dataframe(periods=30)
+        final_forecast = best_model.predict(future)
+
+        return JSONResponse({
+            "message": "Advanced model processed successfully",
+            "best_params": params,
+            "mape": float(best_mape),
+            "forecast": final_forecast[["ds", "yhat", "yhat_lower", "yhat_upper"]]
+                         .tail(30)
+                         .to_dict(orient="records")
+        })
+
+    except Exception as e:
+        traceback.print_exc()
+        return JSONResponse({"error": str(e)}, 500)
+
