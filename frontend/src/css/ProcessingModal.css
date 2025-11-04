@@ -1,0 +1,29 @@
+/* ProcessingModal.css */
+.pm-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1060; /* slightly below bootstrap modal (1050) but ok */
+}
+
+.pm-modal.small {
+  background: #fff;
+  padding: 12px 16px;
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+  min-width: 280px;
+  max-width: 360px;
+  transform: scale(0.9);
+  opacity: 0;
+  animation: popin 0.18s forwards;
+}
+
+@keyframes popin {
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

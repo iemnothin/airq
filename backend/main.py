@@ -597,43 +597,47 @@ def delete_all_data():
 @app.post("/api/v1/model/process-basic")
 def process_basic_model():
     """
-    Train model Facebook Prophet basic (tanpa tuning).
+    Train Prophet basic untuk target PM10 (contoh).
+    Mengembalikan 30 hari forecast terakhir.
     """
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-
         cursor.execute("SELECT waktu, pm10 FROM air_quality_data ORDER BY waktu ASC")
         rows = cursor.fetchall()
         cursor.close()
         conn.close()
 
         if not rows:
-            return JSONResponse({"error": "Tidak ada data untuk diproses"}, 400)
+            return JSONResponse({"error": "Tidak ada data untuk diproses"}, status_code=400)
 
-        df = pd.DataFrame(rows)
-        df["waktu"] = pd.to_datetime(df["waktu"])
-        df = df.rename(columns={"waktu": "ds", "pm10": "y"})
+        df_local = pd.DataFrame(rows)
+        df_local["waktu"] = pd.to_datetime(df_local["waktu"])
+        df_local = df_local.rename(columns={"waktu": "ds", "pm10": "y"})
+        df_local = df_local.dropna(subset=["y"])  # drop NaN pada target
 
         model = Prophet(
             yearly_seasonality=True,
             weekly_seasonality=True,
             daily_seasonality=False
         )
-
-        model.fit(df)
+        model.add_seasonality(name="monthly", period=30.5, fourier_order=5)
+        model.fit(df_local)
 
         future = model.make_future_dataframe(periods=30)
         forecast = model.predict(future)
+        # return last 30 rows of forecast as JSON (ds string)
+        forecast_out = forecast[["ds", "yhat", "yhat_lower", "yhat_upper"]].tail(30)
+        forecast_out["ds"] = forecast_out["ds"].astype(str)
 
         return JSONResponse({
-            "message": "Basic model processed successfully",
-            "forecast": forecast[["ds", "yhat", "yhat_lower", "yhat_upper"]].tail(30).to_dict(orient="records")
+            "message": "Basic model processed",
+            "forecast": forecast_out.round(2).to_dict(orient="records")
         })
 
     except Exception as e:
         traceback.print_exc()
-        return JSONResponse({"error": str(e)}, 500)
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 @app.post("/api/v1/model/process-advanced")
 def process_advanced_model():
@@ -646,78 +650,94 @@ def process_advanced_model():
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-
         cursor.execute("SELECT waktu, pm10 FROM air_quality_data ORDER BY waktu ASC")
         rows = cursor.fetchall()
         cursor.close()
         conn.close()
 
         if not rows:
-            return JSONResponse({"error": "Tidak ada data untuk diproses"}, 400)
+            return JSONResponse({"error": "Tidak ada data untuk diproses"}, status_code=400)
 
-        df = pd.DataFrame(rows)
-        df["waktu"] = pd.to_datetime(df["waktu"])
-        df = df.rename(columns={"waktu": "ds", "pm10": "y"})
+        df_local = pd.DataFrame(rows)
+        df_local["waktu"] = pd.to_datetime(df_local["waktu"])
+        df_local = df_local.rename(columns={"waktu": "ds", "pm10": "y"})
+        df_local = df_local.dropna(subset=["y"])
 
-        # -----------------------------
-        # PARAMETER GRID (Bayesian-like)
-        # -----------------------------
+        # parameter grid sederhana (mirip bayesian opt minimal)
         param_grid = {
-            'changepoint_prior_scale': [0.01, 0.1, 0.5],
-            'seasonality_prior_scale': [1.0, 5.0, 10.0],
+            "changepoint_prior_scale": [0.01, 0.1, 0.5],
+            "seasonality_prior_scale": [1.0, 5.0, 10.0]
         }
-
-        grid = ParameterGrid(param_grid)
         best_mape = np.inf
         best_model = None
+        best_params = None
 
-        # -----------------------------
-        # LOOP TUNING
-        # -----------------------------
-        for params in grid:
-            model = Prophet(
-                holidays=make_holidays_df(year_list=[2022, 2023, 2024], country="ID"),
-                yearly_seasonality=True,
-                weekly_seasonality=True,
-                daily_seasonality=False,
-                changepoint_prior_scale=params["changepoint_prior_scale"],
-                seasonality_prior_scale=params["seasonality_prior_scale"]
-            )
+        # split small validation: gunakan tail 30 hari sebagai validation (jika memungkinkan)
+        if len(df_local) < 60:
+            # jika datanya sedikit, kita tetap fit penuh (no val)
+            val_df = None
+        else:
+            val_df = df_local.tail(30)
+            train_df = df_local.iloc[:-30]
 
-            model.add_seasonality("monthly", period=30.5, fourier_order=5)
+        for params in ParameterGrid(param_grid):
+            try:
+                model = Prophet(
+                    holidays=make_holidays_df(year_list=[2022, 2023, 2024, 2025], country="ID"),
+                    yearly_seasonality=True,
+                    weekly_seasonality=True,
+                    daily_seasonality=False,
+                    changepoint_prior_scale=params["changepoint_prior_scale"],
+                    seasonality_prior_scale=params["seasonality_prior_scale"]
+                )
+                model.add_seasonality(name="monthly", period=30.5, fourier_order=5)
 
-            model.fit(df)
+                # fit on train_df if available else full df
+                fit_df = train_df if val_df is not None else df_local
+                model.fit(fit_df)
 
-            # forecast untuk validasi
-            future = model.make_future_dataframe(periods=30)
-            forecast = model.predict(future)
+                # evaluate if val_df exists
+                if val_df is not None:
+                    future = model.make_future_dataframe(periods=len(val_df))
+                    forecast = model.predict(future)
+                    preds = forecast.tail(len(val_df))["yhat"].values
+                    real = val_df["y"].values
+                    # hindari pembagian 0
+                    mask_nonzero = real != 0
+                    if mask_nonzero.sum() == 0:
+                        mape = np.inf
+                    else:
+                        mape = (np.abs((real[mask_nonzero] - preds[mask_nonzero]) / real[mask_nonzero])).mean() * 100
+                else:
+                    # fallback: gunakan in-sample error
+                    future = model.predict(model.make_future_dataframe(periods=0))
+                    mape = 0
 
-            df_eval = df.tail(30)
-            pred = forecast.tail(30)["yhat"].values
-            real = df_eval["y"].values
+                if mape < best_mape:
+                    best_mape = mape
+                    best_model = model
+                    best_params = params
+            except Exception as e_inner:
+                # skip bad param
+                print("param error:", params, e_inner)
+                continue
 
-            mape = np.mean(np.abs((real - pred) / real)) * 100
+        if best_model is None:
+            return JSONResponse({"error": "Gagal menemukan model terbaik"}, status_code=500)
 
-            if mape < best_mape:
-                best_mape = mape
-                best_model = model
-
-        # -----------------------------
-        # FINAL FORECAST
-        # -----------------------------
+        # final forecast (30 hari)
         future = best_model.make_future_dataframe(periods=30)
-        final_forecast = best_model.predict(future)
+        forecast = best_model.predict(future)
+        forecast_out = forecast[["ds", "yhat", "yhat_lower", "yhat_upper"]].tail(30)
+        forecast_out["ds"] = forecast_out["ds"].astype(str)
 
         return JSONResponse({
-            "message": "Advanced model processed successfully",
-            "best_params": params,
-            "mape": float(best_mape),
-            "forecast": final_forecast[["ds", "yhat", "yhat_lower", "yhat_upper"]]
-                         .tail(30)
-                         .to_dict(orient="records")
+            "message": "Advanced model processed",
+            "best_params": best_params,
+            "mape": float(best_mape) if np.isfinite(best_mape) else None,
+            "forecast": forecast_out.round(2).to_dict(orient="records")
         })
 
     except Exception as e:
         traceback.print_exc()
-        return JSONResponse({"error": str(e)}, 500)
-
+        return JSONResponse({"error": str(e)}, status_code=500)

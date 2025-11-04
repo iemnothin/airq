@@ -4,6 +4,7 @@ import "../css/ModelPage.css";
 import OutlierModal from "../components/OutlierModal";
 import NoFileModal from "../components/NoFileModal";
 import { fetchOutliers, handleOutliers } from "../helpers/OutlierHelper";
+import ProcessingPanel from "../components/ProcessingPanel";
 
 const API_BASE = "http://localhost:8000/api/v1";
 
@@ -348,8 +349,19 @@ const ModelPage = ({ setError }) => {
                   </small>
 
                   <div className="d-flex flex-row align-items-center justify-content-center gap-2">
+                    {/* Processing panel (Process Basic / Advanced) */}
+                    <ProcessingPanel
+                      API_BASE={API_BASE}
+                      onProcessed={(data) => {
+                        // optional: refresh data setelah proses selesai
+                        fetchUploadedData();
+                        // bisa setState lain bila diperlukan
+                        console.log("Processed result", data);
+                      }}
+                    />
+
                     {/* Forecast */}
-                    <button
+                    {/* <button
                       className="btn btn-info btn-sm d-flex align-items-center justify-content-center gap-1"
                       style={{ minWidth: "180px" }}
                       onClick={async () => {
@@ -368,10 +380,10 @@ const ModelPage = ({ setError }) => {
                       }}>
                       <i className="fas fa-magic"></i>
                       Forecast Basic
-                    </button>
+                    </button> */}
 
                     {/* Forecast with Parameters */}
-                    <button
+                    {/* <button
                       className="btn btn-success btn-sm d-flex align-items-center justify-content-center gap-1"
                       style={{ minWidth: "220px" }}
                       onClick={async () => {
@@ -390,7 +402,7 @@ const ModelPage = ({ setError }) => {
                       }}>
                       <i className="fas fa-cogs"></i>
                       With Parameters
-                    </button>
+                    </button> */}
 
                     {/* Tangani Outlier */}
                     {outliers.length > 0 && (
@@ -406,7 +418,7 @@ const ModelPage = ({ setError }) => {
                           setIsUploading(false);
                         }}
                         disabled={isUploading}>
-                        <i className="fas fa-cogs"></i>
+                        <i className="fas fa-hands-helping"></i>
                         {isUploading ? "Now handling..." : "Handle Outlier"}
                       </button>
                     )}

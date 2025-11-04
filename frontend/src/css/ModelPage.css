@@ -36,10 +36,10 @@
   gap: 6px;
 }
 
-.model-content-wrapper {
+/* .model-content-wrapper {
   position: relative;
   z-index: 1;
-}
+} */
 
 .sidebar-desktop {
   width: 220px;
