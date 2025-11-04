@@ -10,7 +10,7 @@ const SidebarDesktop = () => {
 
   return (
     <div
-      className="d-none d-md-flex flex-column vh-100 p-3 bg-light border-end"
+      className="sidebar-desktop d-none d-md-flex flex-column vh-100 p-3 bg-light border-end"
       style={{ width: "220px", position: "fixed" }}>
       {/* <Link
         to="/"

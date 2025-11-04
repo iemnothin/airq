@@ -210,7 +210,7 @@ const ModelPage = ({ setError }) => {
 
   return (
     <>
-      <div className="container px-0 py-4">
+      <div className="container px-0 py-4 model-content-wrapper">
         <OutlierModal
           show={showOutlierModal}
           onClose={() => setShowOutlierModal(false)}
@@ -296,7 +296,7 @@ const ModelPage = ({ setError }) => {
           <div className="model-grid">
             {/* LEFT SIDE: Form Upload */}
             <div
-              className="upload-side p-4 rounded shadow"
+              className="upload-side p-4 rounded bg-primary border-primary"
               style={{ backgroundColor: "#f8f9fa" }}>
               <p
                 className="text-center mb-4 fs-5 fw-bold"
@@ -521,6 +521,7 @@ const ModelPage = ({ setError }) => {
             </div>
           </div>
         ) : (
+          // Upload form ketika belum ada data
           // Centered form
           <>
             <h3

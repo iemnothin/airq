@@ -36,6 +36,18 @@
   gap: 6px;
 }
 
+.model-content-wrapper {
+  position: relative;
+  z-index: 1;
+}
+
+.sidebar-desktop {
+  width: 220px;
+  position: fixed;
+  z-index: 9999;
+  background: #fff;
+}
+
 /* ============================================================
    DESKTOP
    ============================================================ */
@@ -191,4 +203,8 @@
 .bg-warning {
   background-color: #fff3cd !important;
   color: #664d03 !important;
+}
+
+.border-primary {
+  border-color: #a8bdd2 !important;
 }
