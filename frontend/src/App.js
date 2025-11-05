@@ -11,6 +11,7 @@ import ForecastPage from "./pages/ForecastPage";
 import ModelPage from "./pages/ModelPage";
 import ContainerPage from "./pages/ContainerPage";
 import { useState } from "react";
+import IspuPage from "./pages/IspuPage";
 
 import LoadingScreen from "./components/LoadingScreen";
 import BackendErrPage from "./pages/BackendErrPage";
@@ -41,16 +42,20 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Halaman tanpa sidebar */}
+        {/* Halaman landing page */}
         <Route path="/" element={<LandingPage />} />
 
-        {/* Halaman dengan sidebar */}
+        {/* Halaman processing page */}
         <Route element={<ContainerPage />}>
+          {/* Halaman Forecast page */}
           <Route
             path="/forecast"
             element={<ForecastPage setError={setError} />}
           />
+          {/* Halaman Model page */}
           <Route path="/model" element={<ModelPage setError={setError} />} />
+          {/* Halaman ISPU page */}
+          <Route path="/ispu" element={<IspuPage setError={setError} />} />
         </Route>
       </Routes>
     </Router>
