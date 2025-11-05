@@ -336,7 +336,7 @@ const ModelPage = ({ setError }) => {
             {/* RIGHT SIDE: Table */}
             <div className="table-side">
               <h5
-                className="text-center mb-3 fs-5 fw-bold"
+                className="text-center mb-3 fs-4 fw-bold"
                 style={{ color: "#3B82F6" }}>
                 Data Kualitas Udara Kota Bogor
               </h5>
