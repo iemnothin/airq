@@ -35,6 +35,16 @@
   color: #084298 !important;
 }
 
+.btn-secondary {
+  background-color: #e2e3e5 !important;
+  color: #41464b !important;
+}
+
+.btn-secondary:hover {
+  background-color: #d3d4d6 !important;
+  color: #41464b !important;
+}
+
 .btn-danger {
   background-color: #f8d7da !important;
   color: #992828 !important;
@@ -73,6 +83,16 @@
 .btn-info:hover {
   background-color: #b6effb !important;
   color: #055160 !important;
+}
+
+.btn-dark {
+  background-color: #d3d3d3 !important;
+  color: #1a1a1a !important;
+}
+
+.btn-dark:hover {
+  background-color: #bcbcbc !important;
+  color: #1a1a1a !important;
 }
 
 /* Icon-only button look */

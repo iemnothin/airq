@@ -448,21 +448,27 @@ const ModelPage = ({ setError }) => {
                           className="modal-dialog modal-dialog-centered"
                           onClick={(e) => e.stopPropagation()}>
                           <div className="modal-content">
-                            <div className="modal-header bg-danger text-white">
-                              <h5 className="modal-title">
+                            {/* HEADER */}
+                            <div className="modal-header bg-danger">
+                              <h4 className="modal-title w-100 text-center">
                                 Konfirmasi Hapus Data
-                              </h5>
+                              </h4>
                               <button
                                 type="button"
-                                className="btn-close"
-                                onClick={() =>
-                                  setShowDeleteModal(false)
-                                }></button>
+                                className="btn-close position-absolute end-0 me-3"
+                                onClick={() => setShowDeleteModal(false)}
+                              />
                             </div>
-                            <div className="modal-body">
-                              <p>⚠️ Yakin ingin menghapus semua data?</p>
+
+                            {/* BODY */}
+                            <div className="modal-body text-center">
+                              <h5 className="text-dark">
+                                ⚠️ Yakin ingin menghapus semua data?
+                              </h5>
                             </div>
-                            <div className="modal-footer">
+
+                            {/* FOOTER */}
+                            <div className="modal-footer d-flex justify-content-center gap-3">
                               <button
                                 className="btn btn-secondary"
                                 onClick={() => setShowDeleteModal(false)}>

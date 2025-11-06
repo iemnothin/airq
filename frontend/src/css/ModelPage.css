@@ -171,11 +171,11 @@
   min-width: 160px;
 }
 
-.table-side h5 {
-  color: #3b82f6 !important;
-}
-
 .upload-side {
   background: #fdfdfd;
   border-radius: 12px;
+}
+
+.text-dark {
+  color: #282c34 !important;
 }
