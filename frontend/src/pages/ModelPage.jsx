@@ -6,15 +6,18 @@ import NoFileModal from "../components/NoFileModal";
 import { fetchOutliers, handleOutliers } from "../helpers/OutlierHelper";
 import ProcessingPanel from "../components/ProcessingPanel";
 import ConfirmModal from "../components/ConfirmModal";
+import SuccessToast from "../components/SuccessToast";
 
 const API_BASE = "http://localhost:8000/api/v1";
 
 const ModelPage = ({ setError }) => {
   const [file, setFile] = useState(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isClearingForecast, setIsClearingForecast] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
+  const [isHandlingOutlier, setIsHandlingOutlier] = useState(false);
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadedData, setUploadedData] = useState([]);
-  const [showToast, setShowToast] = useState(false);
   const [outliers, setOutliers] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showOutlierModal, setShowOutlierModal] = useState(false);
@@ -22,6 +25,8 @@ const ModelPage = ({ setError }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   // State untuk Clear Forecast Modal
   const [showClearForecastModal, setShowClearForecastModal] = useState(false);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
 
   // Info cards
   const [info, setInfo] = useState({
@@ -132,7 +137,7 @@ const ModelPage = ({ setError }) => {
 
     const formData = new FormData();
     formData.append("file", file);
-    setIsUploading(true);
+    setIsUploadingFile(true);
     setUploadProgress(0);
 
     const xhr = new XMLHttpRequest();
@@ -142,18 +147,19 @@ const ModelPage = ({ setError }) => {
         setUploadProgress(Math.round((e.loaded / e.total) * 100));
     };
     xhr.onload = async () => {
-      setIsUploading(false);
+      setIsUploadingFile(false);
       if (xhr.status !== 200) return alert("Upload gagal!");
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
-      fetchUploadedData();
+      setToastMessage("File berhasil diunggah!");
+      setShowSuccessToast(true);
+      setTimeout(() => setShowSuccessToast(false), 3000);
+      await fetchUploadedData();
       // Ambil outlier terbaru
       const outlierData = await fetchOutliers(API_BASE);
       setOutliers(outlierData);
     };
     xhr.onerror = () => {
       setError("Tidak dapat menghubungi backend.");
-      setIsUploading(false);
+      setIsUploadingFile(false);
     };
     xhr.send(formData);
   };
@@ -196,25 +202,38 @@ const ModelPage = ({ setError }) => {
   };
 
   const handleDeleteAll = async () => {
-    setIsUploading(true);
+    setIsDeletingAll(true);
     try {
       const res = await fetch(`${API_BASE}/data/delete-all`, {
         method: "DELETE",
       });
+
       if (!res.ok) throw new Error("Gagal menghapus data");
+
       await fetchUploadedData();
       setOutliers([]);
-      setShowDeleteModal(false); // tutup modal setelah sukses
+
+      setShowDeleteModal(false);
+
+      // ✅ Show success toast
+      setToastMessage("Semua data berhasil dihapus!");
+      setShowSuccessToast(true);
+      setTimeout(() => setShowSuccessToast(false), 3000);
     } catch (err) {
       console.error(err);
-      alert("Gagal menghapus data."); // bisa diganti toast nanti
+      setToastMessage("❌ Gagal menghapus data!");
+      setShowSuccessToast(true);
+      setTimeout(() => setShowSuccessToast(false), 3000);
     } finally {
-      setIsUploading(false);
+      setIsDeletingAll(false);
     }
   };
 
   return (
     <>
+      {/* TOAST */}
+      <SuccessToast show={showSuccessToast} text={toastMessage} />
+
       {isProcessing && (
         <div
           className="position-fixed top-0 start-0 w-100 h-100 d-flex flex-column 
@@ -321,9 +340,7 @@ const ModelPage = ({ setError }) => {
             <div
               className="upload-side p-4 rounded bg-sketch-primary border"
               style={{ backgroundColor: "#f8f9fa" }}>
-              <p
-                className="text-center mb-4 fs-5 fw-bold"
-                style={{ color: "#3B82F6" }}>
+              <p className="text-center mb-4 fs-5 fw-bold">
                 Upload Data Kualitas Udara (CSV)
               </p>
               <form onSubmit={handleSubmit} className="upload-box">
@@ -338,10 +355,10 @@ const ModelPage = ({ setError }) => {
                 <button
                   type="submit"
                   className="btn btn-primary w-100"
-                  disabled={isUploading}>
-                  {isUploading ? "Mengupload..." : "Upload CSV"}
+                  disabled={isUploadingFile}>
+                  {isUploadingFile ? "Mengupload..." : "Upload CSV"}
                 </button>
-                {isUploading && (
+                {isUploadingFile && (
                   <div className="mt-3">
                     <div className="progress" style={{ height: "25px" }}>
                       <div
@@ -357,9 +374,7 @@ const ModelPage = ({ setError }) => {
 
             {/* RIGHT SIDE: Table */}
             <div className="table-side">
-              <h5
-                className="text-center mb-3 fs-4 fw-bold"
-                style={{ color: "#3B82F6" }}>
+              <h5 className="text-center mb-3 fs-4 fw-bold">
                 Data Kualitas Udara Kota Bogor
               </h5>
 
@@ -386,9 +401,10 @@ const ModelPage = ({ setError }) => {
                     <button
                       className="btn btn-danger btn-sm d-flex align-items-center justify-content-center gap-2"
                       style={{ minWidth: "180px" }}
-                      onClick={() => setShowClearForecastModal(true)}>
+                      onClick={() => setShowClearForecastModal(true)}
+                      disabled={isClearingForecast}>
                       <i className="fas fa-trash-alt"></i>
-                      Clear Forecast
+                      {isClearingForecast ? "Clearing..." : "Clear Forecast"}
                     </button>
 
                     {/* Tangani Outlier */}
@@ -397,16 +413,18 @@ const ModelPage = ({ setError }) => {
                         className="btn btn-warning btn-sm d-flex align-items-center justify-content-center gap-1"
                         style={{ minWidth: "150px" }}
                         onClick={async () => {
-                          setIsUploading(true);
+                          setIsHandlingOutlier(true);
                           await handleOutliers(API_BASE);
                           await fetchUploadedData();
                           const updatedOutliers = await fetchOutliers(API_BASE);
                           setOutliers(updatedOutliers);
-                          setIsUploading(false);
+                          setIsHandlingOutlier(false);
                         }}
-                        disabled={isUploading}>
+                        disabled={isHandlingOutlier}>
                         <i className="fas fa-hands-helping"></i>
-                        {isUploading ? "Now handling..." : "Handle Outlier"}
+                        {isHandlingOutlier
+                          ? "Now handling..."
+                          : "Handle Outlier"}
                       </button>
                     )}
 
@@ -415,9 +433,9 @@ const ModelPage = ({ setError }) => {
                       className="btn btn-danger btn-sm d-flex align-items-center justify-content-center gap-1"
                       style={{ minWidth: "150px" }}
                       onClick={() => setShowDeleteModal(true)}
-                      disabled={isUploading}>
+                      disabled={isDeletingAll}>
                       <i className="fas fa-trash-alt"></i>
-                      {isUploading ? "Deleting..." : "Hapus Data"}
+                      {isDeletingAll ? "Deleting..." : "Hapus Data"}
                     </button>
 
                     {/* Modal Konfirmasi */}
@@ -427,7 +445,7 @@ const ModelPage = ({ setError }) => {
                       title="Konfirmasi Hapus Semua Data"
                       message="⚠️ Yakin ingin menghapus semua data?"
                       confirmText="Ya, saya yakin"
-                      loading={isUploading}
+                      loading={isDeletingAll}
                       onConfirm={handleDeleteAll}
                     />
 
@@ -437,9 +455,9 @@ const ModelPage = ({ setError }) => {
                       title="Konfirmasi Hapus Forecast"
                       message="⚠️ Yakin ingin menghapus semua data forecast?"
                       confirmText="Ya, saya yakin"
-                      loading={isUploading}
+                      loading={isClearingForecast}
                       onConfirm={async () => {
-                        setIsUploading(true);
+                        setIsClearingForecast(true);
                         try {
                           const res = await fetch(
                             `${API_BASE}/model/clear-forecast`,
@@ -447,16 +465,21 @@ const ModelPage = ({ setError }) => {
                               method: "DELETE",
                             }
                           );
+
                           if (!res.ok)
                             throw new Error("Gagal menghapus data forecast");
 
-                          alert("✅ Semua data forecast berhasil dihapus!");
                           setShowClearForecastModal(false);
+
+                          setToastMessage("Data forecast berhasil dihapus!");
+                          setShowSuccessToast(true);
+                          setTimeout(() => setShowSuccessToast(false), 3000);
                         } catch (err) {
-                          console.error(err);
-                          alert("Gagal menghapus forecast!");
+                          setToastMessage("❌ Gagal menghapus data forecast!");
+                          setShowSuccessToast(true);
+                          setTimeout(() => setShowSuccessToast(false), 3000);
                         } finally {
-                          setIsUploading(false);
+                          setIsClearingForecast(false);
                         }
                       }}
                     />
@@ -565,9 +588,7 @@ const ModelPage = ({ setError }) => {
           // Upload form ketika belum ada data
           // Centered form
           <>
-            <h3
-              className="text-center mb-4 fw-bold"
-              style={{ color: "#3B82F6" }}>
+            <h3 className="text-center mb-4 fw-bold">
               Upload Data Kualitas Udara (CSV)
             </h3>
             <form
@@ -585,10 +606,10 @@ const ModelPage = ({ setError }) => {
               <button
                 type="submit"
                 className="btn btn-primary w-100"
-                disabled={isUploading}>
-                {isUploading ? "Mengupload..." : "Upload CSV"}
+                disabled={isUploadingFile}>
+                {isUploadingFile ? "Mengupload..." : "Upload CSV"}
               </button>
-              {isUploading && (
+              {isUploadingFile && (
                 <div className="mt-3">
                   <div className="progress" style={{ height: "25px" }}>
                     <div
@@ -603,19 +624,6 @@ const ModelPage = ({ setError }) => {
           </>
         )}
       </div>
-
-      {/* TOAST */}
-      {showToast && (
-        <div className="toast text-bg-success show position-fixed top-0 end-0 mt-3 me-2">
-          <div className="d-flex">
-            <div className="toast-body">✅ File berhasil diunggah!</div>
-            <button
-              className="btn-close btn-close-white me-2 m-auto"
-              onClick={() => setShowToast(false)}
-            />
-          </div>
-        </div>
-      )}
     </>
   );
 };

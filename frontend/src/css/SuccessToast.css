@@ -1,0 +1,54 @@
+.success-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #d1f3d3;
+  color: #27632a;
+  padding: 14px 14px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  animation: fadeSlide 0.4s ease-out;
+  z-index: 2000;
+}
+
+/* Check circle */
+.success-check svg {
+  width: 32px;
+  height: 32px;
+  stroke: #27632a;
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Draw animation */
+.success-checkmark {
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: drawCheck 0.6s ease forwards;
+}
+
+/* Text */
+.success-text {
+  font-size: 18px;
+}
+
+@keyframes fadeSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes drawCheck {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
