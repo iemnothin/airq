@@ -161,3 +161,21 @@
     order: 2;
   }
 }
+
+.action-toolbar {
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 10px;
+}
+
+.action-toolbar button {
+  min-width: 160px;
+}
+
+.table-side h5 {
+  color: #3b82f6 !important;
+}
+
+.upload-side {
+  background: #fdfdfd;
+  border-radius: 12px;
+}

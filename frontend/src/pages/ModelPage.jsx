@@ -18,6 +18,7 @@ const ModelPage = ({ setError }) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showOutlierModal, setShowOutlierModal] = useState(false);
   const [showNoFileModal, setShowNoFileModal] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Info cards
   const [info, setInfo] = useState({
@@ -211,6 +212,24 @@ const ModelPage = ({ setError }) => {
 
   return (
     <>
+      {isProcessing && (
+        <div
+          className="position-fixed top-0 start-0 w-100 h-100 d-flex flex-column 
+               align-items-center justify-content-center"
+          style={{
+            backgroundColor: "rgba(0,0,0,0.45)",
+            zIndex: 2000,
+            backdropFilter: "blur(3px)",
+          }}>
+          <div
+            className="spinner-border text-light"
+            style={{ width: "4rem", height: "4rem" }}></div>
+          <p className="mt-3 text-white fs-5 fw-semibold">
+            Processing model...
+          </p>
+        </div>
+      )}
+
       <div className="container px-0 py-4 model-content-wrapper">
         <OutlierModal
           show={showOutlierModal}
@@ -341,21 +360,21 @@ const ModelPage = ({ setError }) => {
                 Data Kualitas Udara Kota Bogor
               </h5>
 
-              {/* ===== Tombol Tangani & Hapus Outlier ===== */}
-              {uploadedData.length > 0 && (
-                <div className="d-flex justify-content-between gap-3 mb-2">
-                  <small className="text-secondary fw-bold">
-                    (src: SPKU Tanah Sereal - Kota Bogor)
-                  </small>
+              <div className="d-flex justify-content-between gap-3 mb-2">
+                <small className="text-secondary fw-bold">
+                  (src: SPKU Tanah Sereal - Kota Bogor)
+                </small>
 
+                {/* ===== Tombol Tangani & Hapus Outlier ===== */}
+                {uploadedData.length > 0 && (
                   <div className="d-flex flex-row align-items-center justify-content-center gap-2">
                     {/* Processing panel (Process Basic / Advanced) */}
                     <ProcessingPanel
                       API_BASE={API_BASE}
-                      onProcessed={(data) => {
-                        // optional: refresh data setelah proses selesai
+                      onStart={() => setIsProcessing(true)}
+                      onDone={(data) => {
+                        setIsProcessing(false);
                         fetchUploadedData();
-                        // bisa setState lain bila diperlukan
                         console.log("Processed result", data);
                       }}
                     />
@@ -505,8 +524,8 @@ const ModelPage = ({ setError }) => {
                       </div>
                     )}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
               <div className="table-responsive" style={{ maxHeight: "500px" }}>
                 <table className="table table-bordered table-striped">
