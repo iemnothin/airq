@@ -3,6 +3,9 @@ import "animate.css/animate.min.css";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import "./css/ContainerPage.css";
 import "./css/ContainerSwipe.css";
+import "./css/Backgrounds.css";
+import "./css/Borders.css";
+import "./css/Buttons.css";
 import "./App.css";
 
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";

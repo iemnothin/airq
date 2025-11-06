@@ -1,0 +1,76 @@
+/* ============================
+   Button Styles
+   ============================ */
+.btn-sketch-primary {
+  background-color: #f8f7f5 !important;
+  color: #4a4a4a !important;
+  border-color: #2e2e2e !important;
+}
+
+.btn-sketch-primary:hover {
+  background-color: #e2e1df !important;
+  color: #4a4a4a !important;
+  border-color: #2e2e2e !important;
+}
+
+.btn-sketch-secondary {
+  background-color: #fff3db !important;
+  color: #4a4a4a !important;
+  border-color: #2e2e2e !important;
+}
+
+.btn-sketch-secondary:hover {
+  background-color: #ffeac2 !important;
+  color: #4a4a4a !important;
+  border-color: #2e2e2e !important;
+}
+
+.btn-primary {
+  background-color: #cce5ff !important;
+  color: #084298 !important;
+}
+
+.btn-primary:hover {
+  background-color: #b8daff !important;
+  color: #084298 !important;
+}
+
+.btn-danger {
+  background-color: #f8d7da !important;
+  color: #992828 !important;
+}
+
+.btn-danger:hover {
+  background-color: #f5c2c7 !important;
+  color: #992828 !important;
+}
+
+.btn-success {
+  background-color: #d1f3d3 !important;
+  color: #27632a !important;
+}
+
+.btn-success:hover {
+  background-color: #b7e4b0 !important;
+  color: #27632a !important;
+}
+
+.btn-warning {
+  background-color: #fff3cd !important;
+  color: #664d03 !important;
+}
+
+.btn-warning:hover {
+  background-color: #ffe8a1 !important;
+  color: #664d03 !important;
+}
+
+.btn-info {
+  background-color: #cff4fc !important;
+  color: #055160 !important;
+}
+
+.btn-info:hover {
+  background-color: #b6effb !important;
+  color: #055160 !important;
+}

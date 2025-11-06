@@ -31,25 +31,23 @@ const ProcessingPanel = ({ API_BASE, onProcessed }) => {
   return (
     <>
       <LoadingModal show={loading} text="Now processing model..." />
-      <div className="d-flex gap-2">
-        <button
-          className="btn btn-info btn-sm d-flex align-items-center gap-2"
-          onClick={() => callEndpoint("/model/process-basic")}
-          disabled={loading}
-          title="Train model basic">
-          <i className="fas fa-magic" />
-          Process Basic
-        </button>
+      <button
+        className="btn btn-sketch-primary btn-sm d-flex align-items-center gap-2"
+        onClick={() => callEndpoint("/model/process-basic")}
+        disabled={loading}
+        title="Train model basic">
+        <i className="fas fa-magic" />
+        Process Basic
+      </button>
 
-        <button
-          className="btn btn-success btn-sm d-flex align-items-center gap-2"
-          onClick={() => callEndpoint("/model/process-advanced")}
-          disabled={loading}
-          title="Train model with holiday, seasonality and tuning">
-          <i className="fas fa-cogs" />
-          Process With Parameters
-        </button>
-      </div>
+      <button
+        className="btn btn-sketch-secondary btn-sm d-flex align-items-center gap-2"
+        onClick={() => callEndpoint("/model/process-advanced")}
+        disabled={loading}
+        title="Train model with holiday, seasonality and tuning">
+        <i className="fas fa-cogs" />
+        Process With Parameters
+      </button>
 
       <ForecastResultModal
         show={showResult}
