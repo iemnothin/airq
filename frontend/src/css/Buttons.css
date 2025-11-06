@@ -74,3 +74,24 @@
   background-color: #b6effb !important;
   color: #055160 !important;
 }
+
+/* Icon-only button look */
+.btn-icon {
+  width: 55px;
+  height: 55px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-icon i {
+  pointer-events: none;
+}
+
+/* Beautiful hover effect */
+.btn-icon:hover {
+  transform: translateY(-2px);
+  transition: 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
