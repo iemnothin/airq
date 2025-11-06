@@ -5,6 +5,7 @@ import OutlierModal from "../components/OutlierModal";
 import NoFileModal from "../components/NoFileModal";
 import { fetchOutliers, handleOutliers } from "../helpers/OutlierHelper";
 import ProcessingPanel from "../components/ProcessingPanel";
+import ConfirmModal from "../components/ConfirmModal";
 
 const API_BASE = "http://localhost:8000/api/v1";
 
@@ -19,6 +20,8 @@ const ModelPage = ({ setError }) => {
   const [showOutlierModal, setShowOutlierModal] = useState(false);
   const [showNoFileModal, setShowNoFileModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  // State untuk Clear Forecast Modal
+  const [showClearForecastModal, setShowClearForecastModal] = useState(false);
 
   // Info cards
   const [info, setInfo] = useState({
@@ -383,29 +386,9 @@ const ModelPage = ({ setError }) => {
                     <button
                       className="btn btn-danger btn-sm d-flex align-items-center justify-content-center gap-2"
                       style={{ minWidth: "180px" }}
-                      onClick={async () => {
-                        if (!window.confirm("⚠️ Hapus semua data forecast?"))
-                          return;
-
-                        try {
-                          const res = await fetch(
-                            `${API_BASE}/model/clear-forecast`,
-                            {
-                              method: "DELETE",
-                            }
-                          );
-
-                          if (!res.ok)
-                            throw new Error("Gagal menghapus data forecast");
-
-                          alert("✅ Semua data forecast berhasil dihapus!");
-                        } catch (err) {
-                          console.error(err);
-                          alert("Gagal menghapus forecast!");
-                        }
-                      }}>
+                      onClick={() => setShowClearForecastModal(true)}>
                       <i className="fas fa-trash-alt"></i>
-                      Clear Forecast Data
+                      Clear Forecast
                     </button>
 
                     {/* Tangani Outlier */}
@@ -438,53 +421,45 @@ const ModelPage = ({ setError }) => {
                     </button>
 
                     {/* Modal Konfirmasi */}
-                    {showDeleteModal && (
-                      <div
-                        className="modal show d-block"
-                        tabIndex="-1"
-                        style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
-                        onClick={() => setShowDeleteModal(false)}>
-                        <div
-                          className="modal-dialog modal-dialog-centered"
-                          onClick={(e) => e.stopPropagation()}>
-                          <div className="modal-content">
-                            {/* HEADER */}
-                            <div className="modal-header bg-danger">
-                              <h4 className="modal-title w-100 text-center">
-                                Konfirmasi Hapus Data
-                              </h4>
-                              <button
-                                type="button"
-                                className="btn-close position-absolute end-0 me-3"
-                                onClick={() => setShowDeleteModal(false)}
-                              />
-                            </div>
+                    <ConfirmModal
+                      show={showDeleteModal}
+                      onClose={() => setShowDeleteModal(false)}
+                      title="Konfirmasi Hapus Semua Data"
+                      message="⚠️ Yakin ingin menghapus semua data?"
+                      confirmText="Ya, saya yakin"
+                      loading={isUploading}
+                      onConfirm={handleDeleteAll}
+                    />
 
-                            {/* BODY */}
-                            <div className="modal-body text-center">
-                              <h5 className="text-dark">
-                                ⚠️ Yakin ingin menghapus semua data?
-                              </h5>
-                            </div>
+                    <ConfirmModal
+                      show={showClearForecastModal}
+                      onClose={() => setShowClearForecastModal(false)}
+                      title="Konfirmasi Hapus Forecast"
+                      message="⚠️ Yakin ingin menghapus semua data forecast?"
+                      confirmText="Ya, saya yakin"
+                      loading={isUploading}
+                      onConfirm={async () => {
+                        setIsUploading(true);
+                        try {
+                          const res = await fetch(
+                            `${API_BASE}/model/clear-forecast`,
+                            {
+                              method: "DELETE",
+                            }
+                          );
+                          if (!res.ok)
+                            throw new Error("Gagal menghapus data forecast");
 
-                            {/* FOOTER */}
-                            <div className="modal-footer d-flex justify-content-center gap-3">
-                              <button
-                                className="btn btn-secondary"
-                                onClick={() => setShowDeleteModal(false)}>
-                                Batal
-                              </button>
-                              <button
-                                className="btn btn-danger"
-                                onClick={handleDeleteAll}
-                                disabled={isUploading}>
-                                {isUploading ? "Deleting..." : "Hapus"}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                          alert("✅ Semua data forecast berhasil dihapus!");
+                          setShowClearForecastModal(false);
+                        } catch (err) {
+                          console.error(err);
+                          alert("Gagal menghapus forecast!");
+                        } finally {
+                          setIsUploading(false);
+                        }
+                      }}
+                    />
                   </div>
                 )}
               </div>
