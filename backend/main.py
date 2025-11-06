@@ -595,15 +595,21 @@ def delete_all_data():
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
 @app.post("/api/v1/model/process-basic")
-def process_basic_model():
+def process_basic_all_pollutants():
     """
-    Train Prophet basic untuk target PM10 (contoh).
-    Mengembalikan 30 hari forecast terakhir.
+    Memproses forecast BASIC untuk semua polutan:
+    pm10, pm25, so2, o3, no2, co, hc
+    Hasil tersimpan langsung ke tabel masing-masing.
     """
+
     try:
+        # ========= POLUTAN YANG DIPROSES =========
+        pollutants = ["pm10", "pm25", "so2", "o3", "no2", "co", "hc"]
+
+        # ========= AMBIL SEMUA DATA =========
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT waktu, pm10 FROM air_quality_data ORDER BY waktu ASC")
+        cursor.execute("SELECT * FROM air_quality_data ORDER BY waktu ASC")
         rows = cursor.fetchall()
         cursor.close()
         conn.close()
@@ -611,28 +617,68 @@ def process_basic_model():
         if not rows:
             return JSONResponse({"error": "Tidak ada data untuk diproses"}, status_code=400)
 
-        df_local = pd.DataFrame(rows)
-        df_local["waktu"] = pd.to_datetime(df_local["waktu"])
-        df_local = df_local.rename(columns={"waktu": "ds", "pm10": "y"})
-        df_local = df_local.dropna(subset=["y"])  # drop NaN pada target
+        df_full = pd.DataFrame(rows)
+        df_full["waktu"] = pd.to_datetime(df_full["waktu"])
 
-        model = Prophet(
-            yearly_seasonality=True,
-            weekly_seasonality=True,
-            daily_seasonality=False
-        )
-        model.add_seasonality(name="monthly", period=30.5, fourier_order=5)
-        model.fit(df_local)
+        # ========= HASIL AKHIR UNTUK RESPONSE =========
+        output_all = {}
 
-        future = model.make_future_dataframe(periods=30)
-        forecast = model.predict(future)
-        # return last 30 rows of forecast as JSON (ds string)
-        forecast_out = forecast[["ds", "yhat", "yhat_lower", "yhat_upper"]].tail(30)
-        forecast_out["ds"] = forecast_out["ds"].astype(str)
+        # ========= LOOP SEMUA POLUTAN =========
+        for pol in pollutants:
+            if pol not in df_full.columns:
+                continue
+
+            df = df_full[["waktu", pol]].rename(columns={"waktu": "ds", pol: "y"})
+            df = df.dropna(subset=["y"])  # drop NaN target
+
+            # ===== MODEL PROPHET BASIC =====
+            model = Prophet(
+                yearly_seasonality=True,
+                weekly_seasonality=True,
+                daily_seasonality=False
+            )
+            model.add_seasonality(name="monthly", period=30.5, fourier_order=5)
+
+            model.fit(df)
+
+            future = model.make_future_dataframe(periods=30)
+            forecast = model.predict(future)
+
+            result = forecast[["ds", "yhat", "yhat_lower", "yhat_upper"]].tail(30)
+            result["ds"] = result["ds"].dt.date
+
+            # ===== SIMPAN KE TABEL SESUAI POLUTAN =====
+            table_name = f"forecast_{pol}_data"
+
+            conn = get_db_connection()
+            cursor = conn.cursor()
+
+            # bersihkan tabel lama
+            cursor.execute(f"DELETE FROM {table_name}")
+
+            insert_query = f"""
+                INSERT INTO {table_name} (waktu, yhat, yhat_lower, yhat_upper)
+                VALUES (%s, %s, %s, %s)
+            """
+
+            for _, row in result.iterrows():
+                cursor.execute(insert_query, (
+                    row["ds"],
+                    float(row["yhat"]),
+                    float(row["yhat_lower"]),
+                    float(row["yhat_upper"])
+                ))
+
+            conn.commit()
+            cursor.close()
+            conn.close()
+
+            # simpan ke response output
+            output_all[pol] = result.round(2).to_dict(orient="records")
 
         return JSONResponse({
-            "message": "Basic model processed",
-            "forecast": forecast_out.round(2).to_dict(orient="records")
+            "message": "Forecast basic berhasil diproses untuk semua polutan",
+            "forecast": output_all
         })
 
     except Exception as e:
@@ -640,17 +686,20 @@ def process_basic_model():
         return JSONResponse({"error": str(e)}, status_code=500)
 
 @app.post("/api/v1/model/process-advanced")
-def process_advanced_model():
+def process_advanced_all_pollutants():
     """
-    Train model Prophet dengan:
-    - Holiday Indonesia
-    - Seasonality tambahan
-    - Bayesian Optimization (grid search sederhana)
+    Memproses FORECAST ADVANCED (holiday + custom seasonality + bayesian optimization)
+    untuk semua polutan:
+    pm10, pm25, so2, o3, no2, co, hc
     """
+
     try:
+        pollutants = ["pm10", "pm25", "so2", "o3", "no2", "co", "hc"]
+
+        # === Load data dari DB ===
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT waktu, pm10 FROM air_quality_data ORDER BY waktu ASC")
+        cursor.execute("SELECT * FROM air_quality_data ORDER BY waktu ASC")
         rows = cursor.fetchall()
         cursor.close()
         conn.close()
@@ -658,85 +707,135 @@ def process_advanced_model():
         if not rows:
             return JSONResponse({"error": "Tidak ada data untuk diproses"}, status_code=400)
 
-        df_local = pd.DataFrame(rows)
-        df_local["waktu"] = pd.to_datetime(df_local["waktu"])
-        df_local = df_local.rename(columns={"waktu": "ds", "pm10": "y"})
-        df_local = df_local.dropna(subset=["y"])
+        df_full = pd.DataFrame(rows)
+        df_full["waktu"] = pd.to_datetime(df_full["waktu"])
 
-        # parameter grid sederhana (mirip bayesian opt minimal)
-        param_grid = {
-            "changepoint_prior_scale": [0.01, 0.1, 0.5],
-            "seasonality_prior_scale": [1.0, 5.0, 10.0]
-        }
-        best_mape = np.inf
-        best_model = None
-        best_params = None
+        # Holidays Indonesia
+        holidays = make_holidays_df(year_list=[2022, 2023, 2024, 2025, 2026], country="ID")
 
-        # split small validation: gunakan tail 30 hari sebagai validation (jika memungkinkan)
-        if len(df_local) < 60:
-            # jika datanya sedikit, kita tetap fit penuh (no val)
-            val_df = None
-        else:
-            val_df = df_local.tail(30)
-            train_df = df_local.iloc[:-30]
+        # === PARAMETER SEARCH SPACE ===
+        cp_scale = [0.05, 0.1, 0.2]
+        seas_scale = [1.0, 5.0, 10.0]
+        holi_scale = [1.0, 5.0, 10.0]
+        weekly = [True, False]
+        yearly = [True, False]
 
-        for params in ParameterGrid(param_grid):
-            try:
-                model = Prophet(
-                    holidays=make_holidays_df(year_list=[2022, 2023, 2024, 2025], country="ID"),
-                    yearly_seasonality=True,
-                    weekly_seasonality=True,
-                    daily_seasonality=False,
-                    changepoint_prior_scale=params["changepoint_prior_scale"],
-                    seasonality_prior_scale=params["seasonality_prior_scale"]
-                )
-                model.add_seasonality(name="monthly", period=30.5, fourier_order=5)
+        param_grid = itertools.product(cp_scale, seas_scale, holi_scale, weekly, yearly)
 
-                # fit on train_df if available else full df
-                fit_df = train_df if val_df is not None else df_local
-                model.fit(fit_df)
+        # hasil final untuk response
+        output_all = {}
 
-                # evaluate if val_df exists
-                if val_df is not None:
-                    future = model.make_future_dataframe(periods=len(val_df))
-                    forecast = model.predict(future)
-                    preds = forecast.tail(len(val_df))["yhat"].values
-                    real = val_df["y"].values
-                    # hindari pembagian 0
-                    mask_nonzero = real != 0
-                    if mask_nonzero.sum() == 0:
-                        mape = np.inf
-                    else:
-                        mape = (np.abs((real[mask_nonzero] - preds[mask_nonzero]) / real[mask_nonzero])).mean() * 100
-                else:
-                    # fallback: gunakan in-sample error
-                    future = model.predict(model.make_future_dataframe(periods=0))
-                    mape = 0
+        # === LOOP SEMUA POLUTAN ===
+        for pol in pollutants:
+            print(f"\n🔵 MEMPROSES ADVANCED MODEL UNTUK: {pol.upper()}")
 
-                if mape < best_mape:
-                    best_mape = mape
-                    best_model = model
-                    best_params = params
-            except Exception as e_inner:
-                # skip bad param
-                print("param error:", params, e_inner)
+            df = df_full[["waktu", pol]].rename(columns={"waktu": "ds", pol: "y"})
+            df = df.dropna(subset=["y"])
+
+            best_mape = float("inf")
+            best_model = None
+
+            # === BAYESIAN / GRID SEARCH MANUAL ===
+            for cp, ss, hs, w, y in param_grid:
+                try:
+                    model = Prophet(
+                        yearly_seasonality=y,
+                        weekly_seasonality=w,
+                        daily_seasonality=False,
+                        holidays=holidays,
+                        changepoint_prior_scale=cp,
+                        seasonality_prior_scale=ss,
+                        holidays_prior_scale=hs
+                    )
+                    model.add_seasonality("monthly", period=30.5, fourier_order=5)
+
+                    model.fit(df)
+
+                    cv = cross_validation(model, initial="180 days", period="180 days", horizon="60 days")
+                    mape_value = mean_absolute_percentage_error(cv["y"], cv["yhat"])
+
+                    if mape_value < best_mape:
+                        best_mape = mape_value
+                        best_model = model
+
+                except Exception as e:
+                    print("❌ Error param:", e)
+                    continue
+
+            if best_model is None:
                 continue
 
-        if best_model is None:
-            return JSONResponse({"error": "Gagal menemukan model terbaik"}, status_code=500)
+            # ===== FINAL FORECAST =====
+            future = best_model.make_future_dataframe(periods=30)
+            forecast = best_model.predict(future)
 
-        # final forecast (30 hari)
-        future = best_model.make_future_dataframe(periods=30)
-        forecast = best_model.predict(future)
-        forecast_out = forecast[["ds", "yhat", "yhat_lower", "yhat_upper"]].tail(30)
-        forecast_out["ds"] = forecast_out["ds"].astype(str)
+            result = forecast[["ds", "yhat", "yhat_lower", "yhat_upper"]].tail(30)
+            result["ds"] = result["ds"].dt.date
+
+            # ===== SIMPAN KE TABEL BERDASARKAN POLUTAN =====
+            table_name = f"forecast_adv_{pol}_data"
+
+            conn = get_db_connection()
+            cursor = conn.cursor()
+
+            cursor.execute(f"DELETE FROM {table_name}")
+
+            insert_sql = f"""
+                INSERT INTO {table_name} (date, yhat, yhat_lower, yhat_upper)
+                VALUES (%s, %s, %s, %s)
+            """
+
+            for _, row in result.iterrows():
+                cursor.execute(insert_sql, (
+                    row["ds"],
+                    float(row["yhat"]),
+                    float(row["yhat_lower"]),
+                    float(row["yhat_upper"])
+                ))
+
+            conn.commit()
+            cursor.close()
+            conn.close()
+
+            output_all[pol] = result.round(2).to_dict(orient="records")
 
         return JSONResponse({
-            "message": "Advanced model processed",
-            "best_params": best_params,
-            "mape": float(best_mape) if np.isfinite(best_mape) else None,
-            "forecast": forecast_out.round(2).to_dict(orient="records")
+            "message": "Advanced model (7 polutan) berhasil diproses",
+            "forecast": output_all
         })
+
+    except Exception as e:
+        traceback.print_exc()
+        return JSONResponse({"error": str(e)}, status_code=500) 
+
+@app.delete("/api/v1/model/clear-forecast")
+def clear_all_forecast_tables():
+    """
+    Mengosongkan semua tabel forecast untuk 7 polutan:
+    pm10, pm25, so2, o3, no2, co, hc
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        tables = [
+            "forecast_pm10_data",
+            "forecast_pm25_data",
+            "forecast_so2_data",
+            "forecast_o3_data",
+            "forecast_no2_data",
+            "forecast_co_data",
+            "forecast_hc_data"
+        ]
+
+        for table in tables:
+            cursor.execute(f"TRUNCATE TABLE {table}")
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return {"message": "Semua tabel forecast berhasil dikosongkan."}
 
     except Exception as e:
         traceback.print_exc()

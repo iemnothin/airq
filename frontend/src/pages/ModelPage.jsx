@@ -297,7 +297,7 @@ const ModelPage = ({ setError }) => {
           <div className="model-grid">
             {/* LEFT SIDE: Form Upload */}
             <div
-              className="upload-side p-4 rounded bg-primary border-primary"
+              className="upload-side p-4 rounded bg-sketch-primary border"
               style={{ backgroundColor: "#f8f9fa" }}>
               <p
                 className="text-center mb-4 fs-5 fw-bold"
@@ -403,6 +403,35 @@ const ModelPage = ({ setError }) => {
                       <i className="fas fa-cogs"></i>
                       With Parameters
                     </button> */}
+
+                    {/* Reset Forecast */}
+                    <button
+                      className="btn btn-danger btn-sm d-flex align-items-center justify-content-center gap-2"
+                      style={{ minWidth: "180px" }}
+                      onClick={async () => {
+                        if (!window.confirm("⚠️ Hapus semua data forecast?"))
+                          return;
+
+                        try {
+                          const res = await fetch(
+                            `${API_BASE}/model/clear-forecast`,
+                            {
+                              method: "DELETE",
+                            }
+                          );
+
+                          if (!res.ok)
+                            throw new Error("Gagal menghapus data forecast");
+
+                          alert("✅ Semua data forecast berhasil dihapus!");
+                        } catch (err) {
+                          console.error(err);
+                          alert("Gagal menghapus forecast!");
+                        }
+                      }}>
+                      <i className="fas fa-trash-alt"></i>
+                      Clear Forecast Data
+                    </button>
 
                     {/* Tangani Outlier */}
                     {outliers.length > 0 && (
