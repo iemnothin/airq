@@ -13,8 +13,8 @@ const ProcessingPanel = ({ API_BASE, onStart, onDone }) => {
       if (onDone) onDone(data);
     } catch (err) {
       console.error(err);
-      alert("Gagal memproses model: " + err.message);
-      if (onDone) onDone(null);
+      // Pass an error object to onDone so the parent can show an error toast
+      if (onDone) onDone({ error: err.message || "Gagal memproses model" });
     }
   };
 

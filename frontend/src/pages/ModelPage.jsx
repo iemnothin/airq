@@ -16,8 +16,8 @@ const ModelPage = ({ setError }) => {
   const [isClearingForecast, setIsClearingForecast] = useState(false);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
   const [isHandlingOutlier, setIsHandlingOutlier] = useState(false);
-  const [setIsUploadingFile] = useState(false);
-  const [setUploadProgress] = useState(0);
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadedData, setUploadedData] = useState([]);
   const [outliers, setOutliers] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -182,9 +182,9 @@ const ModelPage = ({ setError }) => {
       setTimeout(() => setShowSuccessToast(false), 3000);
     } catch (err) {
       console.error(err);
-      setToastMessage("❌ Gagal menghapus data!");
-      setShowSuccessToast(true);
-      setTimeout(() => setShowSuccessToast(false), 3000);
+      setErrorMessage("❌ Gagal menghapus data!");
+      setShowErrorToast(true);
+      setTimeout(() => setShowErrorToast(false), 3000);
     } finally {
       setIsDeletingAll(false);
     }
@@ -196,7 +196,8 @@ const ModelPage = ({ setError }) => {
       <SuccessToast show={showSuccessToast} text={toastMessage} />
       <ErrorToast show={showErrorToast} text={errorMessage} />
 
-      {isProcessing && (
+      {/* Loading overlay untuk processing model dan upload */}
+      {(isProcessing || isUploadingFile) && (
         <div
           className="position-fixed top-0 start-0 w-100 h-100 d-flex flex-column 
                align-items-center justify-content-center"
@@ -209,8 +210,21 @@ const ModelPage = ({ setError }) => {
             className="spinner-border text-light"
             style={{ width: "4rem", height: "4rem" }}></div>
           <p className="mt-3 text-white fs-5 fw-semibold">
-            Processing model...
+            {isProcessing ? "Processing model..." : "Uploading file..."}
           </p>
+          {isUploadingFile && uploadProgress > 0 && (
+            <div className="progress mt-2" style={{ width: "200px" }}>
+              <div
+                className="progress-bar"
+                role="progressbar"
+                style={{ width: `${uploadProgress}%` }}
+                aria-valuenow={uploadProgress}
+                aria-valuemin="0"
+                aria-valuemax="100">
+                {uploadProgress}%
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -369,6 +383,19 @@ const ModelPage = ({ setError }) => {
                         setIsProcessing(false);
                         fetchUploadedData();
                         console.log("Processed result", data);
+
+                        // Show success or error toast based on response
+                        if (data && data.message) {
+                          setToastMessage(data.message);
+                          setShowSuccessToast(true);
+                          setTimeout(() => setShowSuccessToast(false), 3500);
+                        } else {
+                          const errMsg =
+                            (data && data.error) || "Gagal memproses model";
+                          setErrorMessage(errMsg);
+                          setShowErrorToast(true);
+                          setTimeout(() => setShowErrorToast(false), 4500);
+                        }
                       }}
                     />
 
@@ -453,7 +480,7 @@ const ModelPage = ({ setError }) => {
                           setTimeout(() => setShowSuccessToast(false), 3000);
                         } catch (err) {
                           setErrorMessage("Gagal menghapus data forecast!");
-                          setErrorMessage(true);
+                          setShowErrorToast(true);
                           setTimeout(() => setShowErrorToast(false), 3000);
                         } finally {
                           setIsClearingForecast(false);
@@ -573,7 +600,9 @@ const ModelPage = ({ setError }) => {
             }}
             onDone={async (res) => {
               setIsUploadingFile(false);
-              setShowSuccessToast(true); // or setShowSuccessToast if you use a custom toast component
+              // Set success message and show toast
+              setToastMessage("File berhasil diupload dan data telah dimuat!");
+              setShowSuccessToast(true);
               setTimeout(() => setShowSuccessToast(false), 3000);
               await fetchUploadedData();
               const outlierData = await fetchOutliers(API_BASE);
