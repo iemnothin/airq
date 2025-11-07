@@ -505,23 +505,31 @@ const ModelPage = ({ setError }) => {
                   </thead>
                   <tbody>
                     {currentRows.map((row, idx) => (
-                      <tr
-                        key={idx}
-                        className={
-                          outliers.some((o) => o.id === row.id)
-                            ? "table-danger"
-                            : ""
-                        }>
+                      <tr key={idx}>
                         <td>{indexFirst + idx + 1}</td>
                         {Object.entries(row)
                           .filter(([k]) => k !== "id")
-                          .map(([key, val], i) => (
-                            <td key={i}>
-                              {key === "waktu"
-                                ? formatTanggalIndonesia(val)
-                                : val ?? "-"}
-                            </td>
-                          ))}
+                          .map(([key, val], i) => {
+                            // Cek apakah cell ini adalah outlier
+                            const isOutlier = outliers.some(
+                              (o) =>
+                                o.id === row.id &&
+                                o.Kolom?.toLowerCase() === key.toLowerCase()
+                            );
+
+                            return (
+                              <td
+                                key={i}
+                                className={
+                                  isOutlier ? "table-danger fw-bold" : ""
+                                }
+                                title={isOutlier ? "Outlier detected" : ""}>
+                                {key === "waktu"
+                                  ? formatTanggalIndonesia(val)
+                                  : val ?? "-"}
+                              </td>
+                            );
+                          })}
                       </tr>
                     ))}
                   </tbody>

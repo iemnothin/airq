@@ -192,14 +192,30 @@
   user-select: none;
 }
 
-.dd-zone .dd-title { font-size: 1.05rem; }
-.dd-zone .dd-sub { font-size: 0.85rem; }
+.dd-zone .dd-title {
+  font-size: 1.05rem;
+}
+.dd-zone .dd-sub {
+  font-size: 0.85rem;
+}
 
 .dd-zone .dd-icon i {
-  color: #3B82F6; /* existing primary */
+  color: #3b82f6; /* existing primary */
 }
 
 /* subtle responsive */
 @media (max-width: 575px) {
-  .dd-zone { padding: 18px; }
+  .dd-zone {
+    padding: 18px;
+  }
+}
+
+.table-danger {
+  background-color: #f8d7da !important;
+  color: #721c24 !important;
+  transition: background-color 0.3s ease;
+}
+
+.table-danger:hover {
+  background-color: #f5c6cb !important;
 }
