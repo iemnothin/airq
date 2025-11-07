@@ -80,6 +80,7 @@ Kemudian gunakan `process.env.REACT_APP_API_URL` di kode jika diimplementasikan.
 ## Catatan pengembangan
 
 - Komponen dan hooks ditulis untuk kebutuhan UI dan fetch; jika menambahkan endpoint baru, tambahkan hook/fetcher baru dan perbarui komponen yang membutuhkan.
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).

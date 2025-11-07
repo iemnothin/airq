@@ -68,21 +68,21 @@ Ubah nilai `host`, `user`, `password`, dan `database` sesuai lingkungan Anda. Un
 
 Backend mengakses dua tabel berbeda dalam beberapa bagian kode:
 
-1. `air_quality` — dipakai saat `get_all_data()` (SELECT * FROM air_quality ...). Struktur tidak kritis untuk dokumentasi ini, tapi harus memiliki kolom `waktu` yang berformat DATETIME atau TIMESTAMP.
+1. `air_quality` — dipakai saat `get_all_data()` (SELECT \* FROM air_quality ...). Struktur tidak kritis untuk dokumentasi ini, tapi harus memiliki kolom `waktu` yang berformat DATETIME atau TIMESTAMP.
 
 2. `air_quality_data` — tabel utama untuk CRUD dan upload CSV. Kolom yang digunakan:
 
- - id (INT, primary key, auto increment)
- - waktu (DATETIME)
- - pm10 (FLOAT)
- - pm25 (FLOAT)
- - so2 (FLOAT)
- - co (FLOAT)
- - o3 (FLOAT)
- - no2 (FLOAT)
- - hc (FLOAT)
- - kelembaban (FLOAT, nullable)
- - suhu (FLOAT, nullable)
+- id (INT, primary key, auto increment)
+- waktu (DATETIME)
+- pm10 (FLOAT)
+- pm25 (FLOAT)
+- so2 (FLOAT)
+- co (FLOAT)
+- o3 (FLOAT)
+- no2 (FLOAT)
+- hc (FLOAT)
+- kelembaban (FLOAT, nullable)
+- suhu (FLOAT, nullable)
 
 Contoh DDL sederhana (MySQL):
 
