@@ -12,7 +12,8 @@ import re
 import traceback
 import mysql.connector
 from fastapi import Request
-from fastapi import File, UploadFile
+from fastapi import File, UploadFile, HTTPException
+import itertools
 import csv
 from sklearn.model_selection import ParameterGrid
 from fastapi.responses import StreamingResponse
@@ -645,7 +646,8 @@ def process_basic_all_pollutants():
             forecast = model.predict(future)
 
             result = forecast[["ds", "yhat", "yhat_lower", "yhat_upper"]].tail(30)
-            result["ds"] = result["ds"].dt.date
+            # Convert to ISO date string so JSONResponse can serialize it
+            result["ds"] = result["ds"].dt.strftime("%Y-%m-%d")
 
             # ===== SIMPAN KE TABEL SESUAI POLUTAN =====
             table_name = f"forecast_{pol}_data"
@@ -662,8 +664,9 @@ def process_basic_all_pollutants():
             """
 
             for _, row in result.iterrows():
+                # Convert string back to date object for DB insertion
                 cursor.execute(insert_query, (
-                    row["ds"],
+                    datetime.strptime(row["ds"], "%Y-%m-%d").date(),
                     float(row["yhat"]),
                     float(row["yhat_lower"]),
                     float(row["yhat_upper"])
@@ -677,7 +680,7 @@ def process_basic_all_pollutants():
             output_all[pol] = result.round(2).to_dict(orient="records")
 
         return JSONResponse({
-            "message": "Forecast basic berhasil diproses untuk semua polutan",
+            "message": "Forecast Prophet successfully processed for all pollutants.",
             "forecast": output_all
         })
 
@@ -720,7 +723,8 @@ def process_advanced_all_pollutants():
         weekly = [True, False]
         yearly = [True, False]
 
-        param_grid = itertools.product(cp_scale, seas_scale, holi_scale, weekly, yearly)
+        # build full list of parameter combinations so it can be reused per pollutant
+        param_grid = list(itertools.product(cp_scale, seas_scale, holi_scale, weekly, yearly))
 
         # hasil final untuk response
         output_all = {}
@@ -770,10 +774,10 @@ def process_advanced_all_pollutants():
             forecast = best_model.predict(future)
 
             result = forecast[["ds", "yhat", "yhat_lower", "yhat_upper"]].tail(30)
-            result["ds"] = result["ds"].dt.date
+            result["ds"] = result["ds"].dt.strftime("%Y-%m-%d")
 
-            # ===== SIMPAN KE TABEL BERDASARKAN POLUTAN =====
-            table_name = f"forecast_adv_{pol}_data"
+            # === SIMPAN KE TABEL BERDASARKAN POLUTAN =====
+            table_name = f"forecast_{pol}_with_parameters_data"
 
             conn = get_db_connection()
             cursor = conn.cursor()
@@ -781,13 +785,13 @@ def process_advanced_all_pollutants():
             cursor.execute(f"DELETE FROM {table_name}")
 
             insert_sql = f"""
-                INSERT INTO {table_name} (date, yhat, yhat_lower, yhat_upper)
+                INSERT INTO {table_name} (waktu, yhat, yhat_lower, yhat_upper)
                 VALUES (%s, %s, %s, %s)
             """
 
             for _, row in result.iterrows():
                 cursor.execute(insert_sql, (
-                    row["ds"],
+                    datetime.strptime(row["ds"], "%Y-%m-%d").date(),  # Convert string back to date for DB
                     float(row["yhat"]),
                     float(row["yhat_lower"]),
                     float(row["yhat_upper"])
@@ -800,7 +804,7 @@ def process_advanced_all_pollutants():
             output_all[pol] = result.round(2).to_dict(orient="records")
 
         return JSONResponse({
-            "message": "Advanced model (7 polutan) berhasil diproses",
+            "message": "Forecast with parameters (7 pollutants) successfully processed.",
             "forecast": output_all
         })
 
@@ -819,13 +823,13 @@ def clear_all_forecast_tables():
         cursor = conn.cursor()
 
         tables = [
-            "forecast_pm10_data",
-            "forecast_pm25_data",
-            "forecast_so2_data",
-            "forecast_o3_data",
-            "forecast_no2_data",
-            "forecast_co_data",
-            "forecast_hc_data"
+            "forecast_pm10_data", "forecast_pm10_with_parameters_data",
+            "forecast_pm25_data", "forecast_pm25_with_parameters_data",
+            "forecast_so2_data", "forecast_so2_with_parameters_data",
+            "forecast_o3_data", "forecast_o3_with_parameters_data",
+            "forecast_no2_data", "forecast_no2_with_parameters_data",
+            "forecast_co_data", "forecast_co_with_parameters_data",
+            "forecast_hc_data", "forecast_hc_with_parameters_data"
         ]
 
         for table in tables:
