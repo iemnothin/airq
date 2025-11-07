@@ -7,26 +7,29 @@ import { fetchOutliers, handleOutliers } from "../helpers/OutlierHelper";
 import ProcessingPanel from "../components/ProcessingPanel";
 import ConfirmModal from "../components/ConfirmModal";
 import SuccessToast from "../components/SuccessToast";
+import ErrorToast from "../components/ErrorToast";
+import DragDropUpload from "../components/DragDropUpload";
 
 const API_BASE = "http://localhost:8000/api/v1";
 
 const ModelPage = ({ setError }) => {
-  const [file, setFile] = useState(null);
   const [isClearingForecast, setIsClearingForecast] = useState(false);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
   const [isHandlingOutlier, setIsHandlingOutlier] = useState(false);
-  const [isUploadingFile, setIsUploadingFile] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [setIsUploadingFile] = useState(false);
+  const [setUploadProgress] = useState(0);
   const [uploadedData, setUploadedData] = useState([]);
   const [outliers, setOutliers] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showOutlierModal, setShowOutlierModal] = useState(false);
   const [showNoFileModal, setShowNoFileModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  // State untuk Clear Forecast Modal
   const [showClearForecastModal, setShowClearForecastModal] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const [showErrorToast, setShowErrorToast] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [showSingleUpload, setShowSingleUpload] = useState(false);
 
   // Info cards
   const [info, setInfo] = useState({
@@ -122,48 +125,6 @@ const ModelPage = ({ setError }) => {
     getOutliers();
   }, []);
 
-  const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
-    setUploadProgress(0);
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // if (!file) return alert("Pilih file CSV terlebih dahulu!");
-    if (!file) {
-      setShowNoFileModal(true);
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("file", file);
-    setIsUploadingFile(true);
-    setUploadProgress(0);
-
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", `${API_BASE}/upload-csv`);
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable)
-        setUploadProgress(Math.round((e.loaded / e.total) * 100));
-    };
-    xhr.onload = async () => {
-      setIsUploadingFile(false);
-      if (xhr.status !== 200) return alert("Upload gagal!");
-      setToastMessage("File berhasil diunggah!");
-      setShowSuccessToast(true);
-      setTimeout(() => setShowSuccessToast(false), 3000);
-      await fetchUploadedData();
-      // Ambil outlier terbaru
-      const outlierData = await fetchOutliers(API_BASE);
-      setOutliers(outlierData);
-    };
-    xhr.onerror = () => {
-      setError("Tidak dapat menghubungi backend.");
-      setIsUploadingFile(false);
-    };
-    xhr.send(formData);
-  };
-
   const totalPages = Math.ceil(uploadedData.length / rowsPerPage);
   const indexFirst = (currentPage - 1) * rowsPerPage;
   const currentRows = uploadedData.slice(indexFirst, indexFirst + rowsPerPage);
@@ -233,6 +194,7 @@ const ModelPage = ({ setError }) => {
     <>
       {/* TOAST */}
       <SuccessToast show={showSuccessToast} text={toastMessage} />
+      <ErrorToast show={showErrorToast} text={errorMessage} />
 
       {isProcessing && (
         <div
@@ -252,7 +214,7 @@ const ModelPage = ({ setError }) => {
         </div>
       )}
 
-      <div className="container px-0 py-4 model-content-wrapper">
+      <div className="px-0 py-4 model-content-wrapper">
         <OutlierModal
           show={showOutlierModal}
           onClose={() => setShowOutlierModal(false)}
@@ -335,45 +297,46 @@ const ModelPage = ({ setError }) => {
 
         {/* ================= UPLOAD & TABLE ================= */}
         {uploadedData.length > 0 ? (
-          <div className="model-grid">
-            {/* LEFT SIDE: Form Upload */}
-            <div
-              className="upload-side p-4 rounded bg-sketch-primary border"
-              style={{ backgroundColor: "#f8f9fa" }}>
-              <p className="text-center mb-4 fs-5 fw-bold">
-                Upload Data Kualitas Udara (CSV)
-              </p>
-              <form onSubmit={handleSubmit} className="upload-box">
-                <div className="mb-3">
-                  <input
-                    type="file"
-                    accept=".csv"
-                    className="form-control model-file-input"
-                    onChange={handleFileChange}
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="btn btn-primary w-100"
-                  disabled={isUploadingFile}>
-                  {isUploadingFile ? "Mengupload..." : "Upload CSV"}
-                </button>
-                {isUploadingFile && (
-                  <div className="mt-3">
-                    <div className="progress" style={{ height: "25px" }}>
-                      <div
-                        className="progress-bar progress-bar-striped progress-bar-animated bg-info"
-                        style={{ width: `${uploadProgress}%` }}>
-                        Upload File: {uploadProgress}%
-                      </div>
-                    </div>
+          <div className="bg-white p-4 rounded shadow-sm">
+            <div className="table-side">
+              {/* ✅ Single Upload Section (Toggle-able) */}
+              <div
+                className="overflow-hidden"
+                style={{
+                  maxHeight: showSingleUpload ? "500px" : "0px",
+                  transition: "max-height 0.4s ease",
+                }}>
+                {showSingleUpload && (
+                  <div className="mb-4">
+                    <DragDropUpload
+                      apiBase={API_BASE}
+                      onStart={() => {
+                        setIsUploadingFile(true);
+                        setUploadProgress(0);
+                      }}
+                      onProgress={(p) => setUploadProgress(p)}
+                      onDone={async () => {
+                        setIsUploadingFile(false);
+
+                        setToastMessage("✅ File berhasil diunggah!");
+                        setShowSuccessToast(true);
+                        setTimeout(() => setShowSuccessToast(false), 3000);
+
+                        await fetchUploadedData();
+                        const updated = await fetchOutliers(API_BASE);
+                        setOutliers(updated);
+                      }}
+                      onError={(err) => {
+                        setIsUploadingFile(false);
+                        setErrorMessage(err?.message || "Upload failed!");
+                        setShowErrorToast(true);
+                        setTimeout(() => setShowErrorToast(false), 4000);
+                      }}
+                    />
                   </div>
                 )}
-              </form>
-            </div>
+              </div>
 
-            {/* RIGHT SIDE: Table */}
-            <div className="table-side">
               <h5 className="text-center mb-3 fs-4 fw-bold">
                 Data Kualitas Udara Kota Bogor
               </h5>
@@ -385,7 +348,19 @@ const ModelPage = ({ setError }) => {
 
                 {/* ===== Tombol Tangani & Hapus Outlier ===== */}
                 {uploadedData.length > 0 && (
-                  <div className="d-flex flex-row align-items-center justify-content-center gap-2">
+                  <div className="d-flex flex-row align-items-center justify-content-center gap-2 bg-sketch-secondary p-2 border rounded">
+                    <button
+                      className="btn btn-sm btn-outline-primary d-flex align-items-center gap-2"
+                      onClick={() => setShowSingleUpload(!showSingleUpload)}
+                      style={{ minWidth: "auto" }}
+                      title="Upload new data">
+                      <i
+                        className={`fas ${
+                          showSingleUpload ? "fa-times" : "fa-upload"
+                        }`}></i>
+                      {showSingleUpload ? "Close" : "New Data"}
+                    </button>
+
                     {/* Processing panel (Process Basic / Advanced) */}
                     <ProcessingPanel
                       API_BASE={API_BASE}
@@ -400,9 +375,10 @@ const ModelPage = ({ setError }) => {
                     {/* Reset Forecast */}
                     <button
                       className="btn btn-danger btn-sm d-flex align-items-center justify-content-center gap-2"
-                      style={{ minWidth: "180px" }}
+                      style={{ minWidth: "auto" }}
                       onClick={() => setShowClearForecastModal(true)}
-                      disabled={isClearingForecast}>
+                      disabled={isClearingForecast}
+                      title="Clear forecast table">
                       <i className="fas fa-trash-alt"></i>
                       {isClearingForecast ? "Clearing..." : "Clear Forecast"}
                     </button>
@@ -411,7 +387,7 @@ const ModelPage = ({ setError }) => {
                     {outliers.length > 0 && (
                       <button
                         className="btn btn-warning btn-sm d-flex align-items-center justify-content-center gap-1"
-                        style={{ minWidth: "150px" }}
+                        style={{ minWidth: "auto" }}
                         onClick={async () => {
                           setIsHandlingOutlier(true);
                           await handleOutliers(API_BASE);
@@ -420,7 +396,8 @@ const ModelPage = ({ setError }) => {
                           setOutliers(updatedOutliers);
                           setIsHandlingOutlier(false);
                         }}
-                        disabled={isHandlingOutlier}>
+                        disabled={isHandlingOutlier}
+                        title="Handle outlier data">
                         <i className="fas fa-hands-helping"></i>
                         {isHandlingOutlier
                           ? "Now handling..."
@@ -431,11 +408,11 @@ const ModelPage = ({ setError }) => {
                     {/* Hapus Semua Data */}
                     <button
                       className="btn btn-danger btn-sm d-flex align-items-center justify-content-center gap-1"
-                      style={{ minWidth: "150px" }}
+                      style={{ minWidth: "auto" }}
                       onClick={() => setShowDeleteModal(true)}
                       disabled={isDeletingAll}>
                       <i className="fas fa-trash-alt"></i>
-                      {isDeletingAll ? "Deleting..." : "Hapus Data"}
+                      {isDeletingAll ? "Deleting..." : "Delete All"}
                     </button>
 
                     {/* Modal Konfirmasi */}
@@ -475,9 +452,9 @@ const ModelPage = ({ setError }) => {
                           setShowSuccessToast(true);
                           setTimeout(() => setShowSuccessToast(false), 3000);
                         } catch (err) {
-                          setToastMessage("❌ Gagal menghapus data forecast!");
-                          setShowSuccessToast(true);
-                          setTimeout(() => setShowSuccessToast(false), 3000);
+                          setErrorMessage("Gagal menghapus data forecast!");
+                          setErrorMessage(true);
+                          setTimeout(() => setShowErrorToast(false), 3000);
                         } finally {
                           setIsClearingForecast(false);
                         }
@@ -585,43 +562,31 @@ const ModelPage = ({ setError }) => {
             </div>
           </div>
         ) : (
-          // Upload form ketika belum ada data
-          // Centered form
-          <>
-            <h3 className="text-center mb-4 fw-bold">
-              Upload Data Kualitas Udara (CSV)
-            </h3>
-            <form
-              onSubmit={handleSubmit}
-              className="upload-box mx-auto mt-3"
-              style={{ maxWidth: "500px" }}>
-              <div className="mb-3">
-                <input
-                  type="file"
-                  accept=".csv"
-                  className="form-control model-file-input"
-                  onChange={handleFileChange}
-                />
-              </div>
-              <button
-                type="submit"
-                className="btn btn-primary w-100"
-                disabled={isUploadingFile}>
-                {isUploadingFile ? "Mengupload..." : "Upload CSV"}
-              </button>
-              {isUploadingFile && (
-                <div className="mt-3">
-                  <div className="progress" style={{ height: "25px" }}>
-                    <div
-                      className="progress-bar progress-bar-striped progress-bar-animated bg-info"
-                      style={{ width: `${uploadProgress}%` }}>
-                      Upload File: {uploadProgress}%
-                    </div>
-                  </div>
-                </div>
-              )}
-            </form>
-          </>
+          <DragDropUpload
+            apiBase={API_BASE}
+            onStart={() => {
+              setIsUploadingFile(true);
+              setUploadProgress(0);
+            }}
+            onProgress={(p) => {
+              setUploadProgress(p);
+            }}
+            onDone={async (res) => {
+              setIsUploadingFile(false);
+              setShowSuccessToast(true); // or setShowSuccessToast if you use a custom toast component
+              setTimeout(() => setShowSuccessToast(false), 3000);
+              await fetchUploadedData();
+              const outlierData = await fetchOutliers(API_BASE);
+              setOutliers(outlierData);
+            }}
+            onError={(err) => {
+              setIsUploadingFile(false);
+              // show error toast (you asked to create an error toast earlier)
+              setErrorMessage(err?.message || "Upload failed");
+              setShowErrorToast(true); // reuse success toast component but show message; or create error toast component
+              setTimeout(() => setShowErrorToast(false), 4000);
+            }}
+          />
         )}
       </div>
     </>

@@ -1,5 +1,4 @@
 // src/components/ProcessingPanel.jsx
-import React from "react";
 
 const ProcessingPanel = ({ API_BASE, onStart, onDone }) => {
   const callEndpoint = async (path) => {

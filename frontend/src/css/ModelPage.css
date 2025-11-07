@@ -179,3 +179,27 @@
 .text-dark {
   color: #282c34 !important;
 }
+
+/* Drag & Drop styles */
+.dd-zone {
+  min-height: 170px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 160ms ease;
+  user-select: none;
+}
+
+.dd-zone .dd-title { font-size: 1.05rem; }
+.dd-zone .dd-sub { font-size: 0.85rem; }
+
+.dd-zone .dd-icon i {
+  color: #3B82F6; /* existing primary */
+}
+
+/* subtle responsive */
+@media (max-width: 575px) {
+  .dd-zone { padding: 18px; }
+}

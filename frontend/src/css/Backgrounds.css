@@ -7,6 +7,12 @@
   border-color: #2e2e2e !important;
 }
 
+.bg-sketch-secondary {
+  background-color: #f8f7f5 !important;
+  color: #4a4a4a !important;
+  border-color: #2e2e2e !important;
+}
+
 .bg-primary {
   background-color: #cce5ff !important;
   color: #084298 !important;
