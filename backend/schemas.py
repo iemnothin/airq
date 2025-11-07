@@ -1,10 +1,8 @@
-"""
-schemas.py - Pydantic models for AirQ backend
-"""
 from pydantic import BaseModel
+from typing import Optional
 
 class AirQuality(BaseModel):
-    id: int
+    id: Optional[int]
     waktu: str
     pm10: float
     pm25: float
@@ -13,5 +11,11 @@ class AirQuality(BaseModel):
     o3: float
     no2: float
     hc: float
-    kelembaban: float
-    suhu: float
+    kelembaban: Optional[float]
+    suhu: Optional[float]
+
+class ForecastResult(BaseModel):
+    ds: str
+    yhat: float
+    yhat_lower: float
+    yhat_upper: float
