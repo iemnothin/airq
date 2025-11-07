@@ -4,22 +4,10 @@
 
 ## Ringkasan
 
-- Bahasa/framework: Python 3.11+ dan FastAPI
-- Server development: Uvicorn
-- Machine learning: Prophet
-- Database: MySQL (menggunakan `mysql-connector-python`)
-
 File utama: `main.py` (terletak di folder `backend/`).
 
 ## Persyaratan
 
-- Python 3.11 atau lebih baru
-- MySQL server yang bisa diakses dari mesin tempat backend dijalankan
-
-Dependencies (terdaftar di `requirements.txt`):
-
-```
-fastapi
 uvicorn[standard]
 pandas
 numpy
@@ -29,7 +17,8 @@ holidays
 scikit-learn
 mysql-connector-python
 python-multipart
-```
+
+````
 
 ## Persiapan (Windows PowerShell)
 
@@ -39,7 +28,7 @@ python-multipart
 ```powershell
 python -m venv .venv
 .\\.venv\\Scripts\\Activate.ps1
-```
+````
 
 3. Install dependency:
 
