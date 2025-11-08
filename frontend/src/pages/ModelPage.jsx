@@ -335,7 +335,7 @@ const ModelPage = ({ setError }) => {
         {uploadedData.length > 0 && (
           <div className="row mb-4">
             {/* Jumlah Data */}
-            <div className="col-md-4 mb-2">
+            <div className="col-12 col-md-4 mb-3">
               <div className="card bg-primary h-100">
                 <div className="card-body d-flex align-items-center gap-3">
                   <i className="fas fa-database fs-2"></i>
@@ -348,7 +348,7 @@ const ModelPage = ({ setError }) => {
             </div>
 
             {/* Status Outlier */}
-            <div className="col-md-4 mb-2">
+            <div className="col-12 col-md-4 mb-3">
               <div
                 className={`card h-100 text-white ${
                   info.outlierCount === 0 ? "bg-success" : "bg-danger"
@@ -375,7 +375,7 @@ const ModelPage = ({ setError }) => {
             </div>
 
             {/* Status NaN / Null */}
-            <div className="col-md-4 mb-2">
+            <div className="col-12 col-md-4 mb-3">
               <div
                 className={`card h-100 text-white ${
                   info.nanCount === 0 ? "bg-success" : "bg-warning"
@@ -452,38 +452,39 @@ const ModelPage = ({ setError }) => {
                 </small>
               </div>
 
-              <div className="d-flex justify-content-between gap-3 mb-2">
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                  <div className="d-flex align-items-center gap-2">
-                    <label className="fw-bold text-secondary mb-0">
-                      Search by Date:
-                    </label>
-                    <input
-                      type="date"
-                      className="form-control form-control-sm"
-                      value={searchDate}
-                      onChange={(e) => {
-                        setSearchDate(e.target.value);
-                        setCurrentPage(1); // reset pagination ke halaman pertama
-                      }}
-                      style={{ width: "200px" }}
-                    />
-                    {searchDate && (
-                      <button
-                        className="btn btn-outline-secondary btn-sm"
-                        onClick={() => setSearchDate("")}>
-                        <i className="fas fa-times"></i> Clear
-                      </button>
-                    )}
-                  </div>
+              {/* ================= SEARCH & ACTION PANEL ================= */}
+              <div className="action-toolbar bg-white rounded p-2 mb-3 shadow-sm flex-wrap">
+                {/* 🔍 Search Section */}
+                <div className="search-toolbar d-flex flex-wrap align-items-center gap-2 mb-2 mb-md-0">
+                  <label className="fw-bold text-secondary mb-0">
+                    Search by Date:
+                  </label>
+                  <input
+                    type="date"
+                    className="form-control form-control-sm flex-grow-1 w-auto"
+                    value={searchDate}
+                    onChange={(e) => {
+                      setSearchDate(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    style={{ maxWidth: "200px" }}
+                  />
+                  {searchDate && (
+                    <button
+                      className="btn btn-outline-secondary btn-sm"
+                      onClick={() => setSearchDate("")}>
+                      <i className="fas fa-times"></i> Clear
+                    </button>
+                  )}
                 </div>
-                {/* ===== Tombol Tangani & Hapus Outlier ===== */}
+
+                {/* ⚙️ Action Buttons */}
                 {uploadedData.length > 0 && (
-                  <div className="d-flex flex-row align-items-center justify-content-center gap-2 bg-sketch-secondary p-2 border rounded">
+                  <div className="d-flex flex-wrap justify-content-center justify-content-md-end align-items-center gap-2 bg-sketch-secondary p-2 border rounded mobile-flex-stack w-100 w-md-auto">
+                    {/* Upload New Data */}
                     <button
                       className="btn btn-sm btn-outline-primary d-flex align-items-center gap-2"
                       onClick={() => setShowSingleUpload(!showSingleUpload)}
-                      style={{ minWidth: "auto" }}
                       title="Upload new data">
                       <i
                         className={`fas ${
@@ -492,7 +493,7 @@ const ModelPage = ({ setError }) => {
                       {showSingleUpload ? "Close" : "New Data"}
                     </button>
 
-                    {/* Processing panel (Process Basic / Advanced) */}
+                    {/* Processing Panel */}
                     <ProcessingPanel
                       API_BASE={API_BASE}
                       setIsProcessing={setIsProcessing}
@@ -501,15 +502,13 @@ const ModelPage = ({ setError }) => {
                         setIsProcessing(false);
                         fetchUploadedData();
                         console.log("Processed result", data);
-
-                        // Show success or error toast based on response
                         if (data && data.message) {
                           setToastMessage(data.message);
                           setShowSuccessToast(true);
                           setTimeout(() => setShowSuccessToast(false), 3500);
                         } else {
                           const errMsg =
-                            (data && data.error) || "Gagal memproses model";
+                            (data && data.error) || "Failed to process model";
                           setErrorMessage(errMsg);
                           setShowErrorToast(true);
                           setTimeout(() => setShowErrorToast(false), 4500);
@@ -519,10 +518,10 @@ const ModelPage = ({ setError }) => {
                       setForecastMessage={setForecastMessage}
                       setCurrentPollutant={setCurrentPollutant}
                     />
-                    {/* Reset Forecast */}
+
+                    {/* Clear Forecast */}
                     <button
                       className="btn btn-danger btn-sm d-flex align-items-center justify-content-center gap-2"
-                      style={{ minWidth: "auto" }}
                       onClick={() => setShowClearForecastModal(true)}
                       disabled={isClearingForecast}
                       title="Clear forecast table">
@@ -530,11 +529,10 @@ const ModelPage = ({ setError }) => {
                       {isClearingForecast ? "Clearing..." : "Clear Forecast"}
                     </button>
 
-                    {/* Tangani Outlier */}
+                    {/* Handle Outlier */}
                     {outliers.length > 0 && (
                       <button
                         className="btn btn-warning btn-sm d-flex align-items-center justify-content-center gap-1"
-                        style={{ minWidth: "auto" }}
                         onClick={async () => {
                           setIsHandlingOutlier(true);
                           await handleOutliers(API_BASE);
@@ -552,23 +550,22 @@ const ModelPage = ({ setError }) => {
                       </button>
                     )}
 
-                    {/* Hapus Semua Data */}
+                    {/* Delete All Data */}
                     <button
                       className="btn btn-danger btn-sm d-flex align-items-center justify-content-center gap-1"
-                      style={{ minWidth: "auto" }}
                       onClick={() => setShowDeleteModal(true)}
                       disabled={isDeletingAll}>
                       <i className="fas fa-trash-alt"></i>
                       {isDeletingAll ? "Deleting..." : "Delete All"}
                     </button>
 
-                    {/* Modal Konfirmasi */}
+                    {/* Confirm Modals */}
                     <ConfirmModal
                       show={showDeleteModal}
                       onClose={() => setShowDeleteModal(false)}
-                      title="Konfirmasi Hapus Semua Data"
-                      message="⚠️ Yakin ingin menghapus semua data?"
-                      confirmText="Ya, saya yakin"
+                      title="Confirm Delete All Data"
+                      message="⚠️ Are you sure you want to delete all data?"
+                      confirmText="Yes, I'm sure"
                       loading={isDeletingAll}
                       onConfirm={handleDeleteAll}
                     />
@@ -576,9 +573,9 @@ const ModelPage = ({ setError }) => {
                     <ConfirmModal
                       show={showClearForecastModal}
                       onClose={() => setShowClearForecastModal(false)}
-                      title="Konfirmasi Hapus Forecast"
-                      message="⚠️ Yakin ingin menghapus semua data forecast?"
-                      confirmText="Ya, saya yakin"
+                      title="Confirm Clear Forecast"
+                      message="⚠️ Are you sure you want to delete all forecast data?"
+                      confirmText="Yes, delete it"
                       loading={isClearingForecast}
                       onConfirm={async () => {
                         setIsClearingForecast(true);
@@ -589,17 +586,16 @@ const ModelPage = ({ setError }) => {
                               method: "DELETE",
                             }
                           );
-
                           if (!res.ok)
-                            throw new Error("Gagal menghapus data forecast");
-
+                            throw new Error("Failed to clear forecast data");
                           setShowClearForecastModal(false);
-
-                          setToastMessage("Data forecast berhasil dihapus!");
+                          setToastMessage(
+                            "Forecast data successfully cleared!"
+                          );
                           setShowSuccessToast(true);
                           setTimeout(() => setShowSuccessToast(false), 3000);
                         } catch (err) {
-                          setErrorMessage("Gagal menghapus data forecast!");
+                          setErrorMessage("Failed to clear forecast data!");
                           setShowErrorToast(true);
                           setTimeout(() => setShowErrorToast(false), 3000);
                         } finally {
@@ -611,7 +607,9 @@ const ModelPage = ({ setError }) => {
                 )}
               </div>
 
-              <div className="table-responsive" style={{ maxHeight: "500px" }}>
+              <div
+                className="table-responsive shadow-sm rounded-3 border mt-3"
+                style={{ maxHeight: "500px" }}>
                 <table className="table table-bordered table-striped">
                   <thead className="table-success">
                     <tr>

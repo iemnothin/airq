@@ -21,7 +21,7 @@ const Navigation = () => {
 
       {/* ✅ Hamburger button (tampil di <1200px) */}
       <button
-        className="btn btn-primary d-xl-none position-fixed"
+        className="btn btn-primary d-none d-md-block d-xl-none position-fixed"
         style={{
           top: "12px",
           left: "12px",
@@ -33,7 +33,7 @@ const Navigation = () => {
       </button>
 
       {/* ✅ Bottom Bar khusus Mobile (<768px) */}
-      <div className="d-block d-md-none">
+      <div className="mobile-bottom-wrapper d-block d-md-none text-center">
         <BottomBarMobile />
       </div>
     </>
