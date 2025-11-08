@@ -169,7 +169,7 @@ const DragDropUpload = ({
               onClick={handleClickChoose}>
               Choose file
             </button>
-            <button
+            {/* <button
               type="button"
               className="btn btn-primary btn-sm"
               onClick={() => {
@@ -177,7 +177,7 @@ const DragDropUpload = ({
                 if (!filename) handleClickChoose();
               }}>
               {filename ? "Upload Selected" : "Select & Upload"}
-            </button>
+            </button> */}
           </div>
         </div>
       </div>
