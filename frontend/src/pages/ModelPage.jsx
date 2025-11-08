@@ -5,7 +5,6 @@ import OutlierModal from "../components/OutlierModal";
 import NoFileModal from "../components/NoFileModal";
 import { fetchOutliers, handleOutliers } from "../helpers/OutlierHelper";
 import ProcessingPanel from "../components/ProcessingPanel";
-import ForecastProgress from "../components/ForecastProgress";
 import ConfirmModal from "../components/ConfirmModal";
 import SuccessToast from "../components/SuccessToast";
 import ErrorToast from "../components/ErrorToast";
@@ -35,6 +34,7 @@ const ModelPage = ({ setError }) => {
   const [forecastMessage, setForecastMessage] = useState("");
   const [currentPollutant, setCurrentPollutant] = useState("");
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [searchDate, setSearchDate] = useState("");
 
   // Info cards
   const [info, setInfo] = useState({
@@ -130,9 +130,15 @@ const ModelPage = ({ setError }) => {
     getOutliers();
   }, []);
 
-  const totalPages = Math.ceil(uploadedData.length / rowsPerPage);
+  const filteredData = uploadedData.filter((row) => {
+    if (!searchDate) return true; // kalau belum diisi, tampilkan semua
+    const tanggalRow = new Date(row.waktu).toISOString().split("T")[0];
+    return tanggalRow === searchDate;
+  });
+
+  const totalPages = Math.ceil(filteredData.length / rowsPerPage);
   const indexFirst = (currentPage - 1) * rowsPerPage;
-  const currentRows = uploadedData.slice(indexFirst, indexFirst + rowsPerPage);
+  const currentRows = filteredData.slice(indexFirst, indexFirst + rowsPerPage);
 
   const getPageNumbers = () => {
     if (totalPages <= 5) return [...Array(totalPages).keys()].map((x) => x + 1);
@@ -435,15 +441,42 @@ const ModelPage = ({ setError }) => {
                 )}
               </div>
 
-              <h5 className="text-center mb-3 fs-4 fw-bold">
-                Data Kualitas Udara Kota Bogor
-              </h5>
+              <div className="d-flex flex-column justify-content-center align-items-center mb-3">
+                <h5 className="text-center fs-4 fw-bold">
+                  Data Kualitas Udara Kota Bogor
+                </h5>
+
+                <small className="text-muted">
+                  Showing {filteredData.length} of {uploadedData.length} records
+                  | (src: SPKU Tanah Sereal - Kota Bogor)
+                </small>
+              </div>
 
               <div className="d-flex justify-content-between gap-3 mb-2">
-                <small className="text-secondary fw-bold">
-                  (src: SPKU Tanah Sereal - Kota Bogor)
-                </small>
-
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <div className="d-flex align-items-center gap-2">
+                    <label className="fw-bold text-secondary mb-0">
+                      Search by Date:
+                    </label>
+                    <input
+                      type="date"
+                      className="form-control form-control-sm"
+                      value={searchDate}
+                      onChange={(e) => {
+                        setSearchDate(e.target.value);
+                        setCurrentPage(1); // reset pagination ke halaman pertama
+                      }}
+                      style={{ width: "200px" }}
+                    />
+                    {searchDate && (
+                      <button
+                        className="btn btn-outline-secondary btn-sm"
+                        onClick={() => setSearchDate("")}>
+                        <i className="fas fa-times"></i> Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
                 {/* ===== Tombol Tangani & Hapus Outlier ===== */}
                 {uploadedData.length > 0 && (
                   <div className="d-flex flex-row align-items-center justify-content-center gap-2 bg-sketch-secondary p-2 border rounded">
@@ -486,7 +519,6 @@ const ModelPage = ({ setError }) => {
                       setForecastMessage={setForecastMessage}
                       setCurrentPollutant={setCurrentPollutant}
                     />
-                    {/* <ForecastProgress API_BASE={API_BASE} /> */}
                     {/* Reset Forecast */}
                     <button
                       className="btn btn-danger btn-sm d-flex align-items-center justify-content-center gap-2"
@@ -593,7 +625,15 @@ const ModelPage = ({ setError }) => {
                   </thead>
                   <tbody>
                     {currentRows.map((row, idx) => (
-                      <tr key={idx}>
+                      <tr
+                        key={idx}
+                        className={
+                          searchDate &&
+                          new Date(row.waktu).toISOString().split("T")[0] ===
+                            searchDate
+                            ? "table-info"
+                            : ""
+                        }>
                         <td>{indexFirst + idx + 1}</td>
                         {Object.entries(row)
                           .filter(([k]) => k !== "id")
