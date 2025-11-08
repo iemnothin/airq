@@ -1,88 +1,82 @@
 const ProcessingPanel = ({
   API_BASE,
-  onStart,
-  onDone,
   setIsProcessing,
   setForecastProgress,
   setForecastMessage,
   setCurrentPollutant,
 }) => {
   const callEndpoint = async (path) => {
-    if (onStart) onStart();
+    if (setIsProcessing) setIsProcessing(true);
 
-    if (path === "/model/process-advanced") {
-      try {
-        const evtSource = new EventSource(`${API_BASE}${path}/stream`);
-        setForecastProgress(0);
-        setForecastMessage("Preparing advanced forecast...");
-        setCurrentPollutant("");
-
-        evtSource.onmessage = (event) => {
-          const data = JSON.parse(event.data);
-
-          switch (data.status) {
-            case "start":
-              setForecastMessage("Initializing forecast model...");
-              break;
-
-            case "begin":
-              setForecastProgress(0);
-              setCurrentPollutant(data.pollutant);
-              setForecastMessage(`Processing ${data.pollutant}...`);
-              break;
-
-            case "progress":
-              setForecastProgress(data.progress);
-              setForecastMessage(
-                `Processing ${data.pollutant} (${data.progress}%)...`
-              );
-              break;
-
-            case "done":
-              setForecastProgress(100);
-              setForecastMessage(`${data.pollutant} completed.`);
-              break;
-
-            case "complete":
-              setForecastMessage("✅ All forecasts completed!");
-              evtSource.close();
-              setTimeout(() => onDone({ message: "Forecast complete" }), 1500);
-              break;
-
-            case "error":
-              setForecastMessage(`❌ Error: ${data.message}`);
-              evtSource.close();
-              onDone({ error: data.message });
-              break;
-          }
-        };
-
-        evtSource.onerror = () => {
-          setForecastMessage("❌ Connection lost or server stopped.");
-          evtSource.close();
-          onDone({ error: "Connection lost" });
-        };
-      } catch (err) {
-        console.error(err);
-        onDone({ error: err.message });
-      }
-      return;
-    }
-
-    // process-basic (default)
     try {
       const res = await fetch(`${API_BASE}${path}`, { method: "POST" });
       const data = await res.json();
+
       if (!res.ok) throw new Error(data?.error || "Server error");
-      onDone(data);
+      setForecastMessage(
+        data?.message || "✅ Forecast completed successfully."
+      );
+      setForecastProgress(100);
     } catch (err) {
       console.error(err);
-      onDone({ error: err.message || "Failed to process model" });
+      setForecastMessage(err.message || "❌ Forecast failed.");
+    } finally {
+      setTimeout(() => setIsProcessing(false), 2000);
     }
   };
 
+  const handleAdvancedForecast = () => {
+    if (setIsProcessing) setIsProcessing(true);
+    setForecastMessage("🔄 Starting advanced forecast...");
+    setForecastProgress(0);
+    setCurrentPollutant("");
+
+    const evtSource = new EventSource(
+      `${API_BASE}/model/process-advanced/stream`
+    );
+    window.currentForecastStream = evtSource; // ✅ simpan global supaya bisa di-cancel dari ModelPage.jsx
+
+    evtSource.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+
+      if (data.status === "start") {
+        setForecastMessage(data.message);
+        setForecastProgress(0);
+      } else if (data.status === "begin") {
+        setCurrentPollutant(data.pollutant);
+        setForecastMessage(data.message);
+        setForecastProgress(0);
+      } else if (data.status === "progress") {
+        setCurrentPollutant(data.pollutant);
+        setForecastMessage(data.message);
+        setForecastProgress(data.progress);
+      } else if (data.status === "done") {
+        setForecastProgress(100);
+        setForecastMessage(`✅ ${data.pollutant} completed.`);
+      } else if (data.status === "complete") {
+        setForecastProgress(100);
+        setForecastMessage("✅ All forecasts completed successfully!");
+        setTimeout(() => setIsProcessing(false), 2000);
+        evtSource.close();
+        window.currentForecastStream = null;
+      } else if (data.status === "error") {
+        setForecastMessage(`Error: ${data.message}`);
+        setIsProcessing(false);
+        evtSource.close();
+        window.currentForecastStream = null;
+      }
+    };
+
+    evtSource.onerror = () => {
+      setForecastMessage("❌ Connection lost or backend stopped.");
+      setIsProcessing(false);
+      evtSource.close();
+      window.currentForecastStream = null;
+    };
+  };
+
   return (
-    <>
+    <div className="d-flex align-items-center gap-2">
       <button
         className="btn btn-sketch-primary btn-sm d-flex align-items-center gap-2"
         onClick={() => callEndpoint("/model/process-basic")}
@@ -93,36 +87,12 @@ const ProcessingPanel = ({
 
       <button
         className="btn btn-sketch-secondary btn-sm d-flex align-items-center gap-2"
-        // onClick={() => callEndpoint("/model/process-advanced")}
-        onClick={() => {
-          setIsProcessing(true);
-          const evtSource = new EventSource(
-            `${API_BASE}/model/process-advanced/stream`
-          );
-          evtSource.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            if (data.status === "progress") {
-              setCurrentPollutant(data.pollutant);
-              setForecastProgress(data.progress);
-              setForecastMessage(data.message);
-            } else if (data.status === "complete") {
-              setForecastMessage(data.message);
-              setForecastProgress(100);
-              setTimeout(() => setIsProcessing(false), 2000);
-              evtSource.close();
-            }
-          };
-          evtSource.onerror = () => {
-            setForecastMessage("❌ Connection lost or failed.");
-            setIsProcessing(false);
-            evtSource.close();
-          };
-        }}
-        title="Train model with tuning and holidays">
+        onClick={handleAdvancedForecast}
+        title="Train model with holiday, seasonality and tuning">
         <i className="fas fa-cogs" />
         Process With Parameters
       </button>
-    </>
+    </div>
   );
 };
 

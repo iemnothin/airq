@@ -34,6 +34,7 @@ const ModelPage = ({ setError }) => {
   const [forecastProgress, setForecastProgress] = useState(0);
   const [forecastMessage, setForecastMessage] = useState("");
   const [currentPollutant, setCurrentPollutant] = useState("");
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   // Info cards
   const [info, setInfo] = useState({
@@ -240,6 +241,58 @@ const ModelPage = ({ setError }) => {
                   {forecastProgress.toFixed(0)}%
                 </div>
               </div>
+
+              {/* 🔴 Cancel Button */}
+              <button
+                className="btn btn-danger btn-sm mt-3 d-flex align-items-center gap-2"
+                onClick={() => setShowCancelConfirm(true)}>
+                <i className="fas fa-times-circle" />
+                Cancel
+              </button>
+
+              {/* ⚠️ Cancel Confirmation Modal */}
+              {showCancelConfirm && (
+                <div
+                  className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center"
+                  style={{
+                    backgroundColor: "rgba(0, 0, 0, 0.6)",
+                    zIndex: 3000,
+                  }}>
+                  <div
+                    className="bg-white rounded p-4 shadow"
+                    style={{ maxWidth: "400px" }}>
+                    <h5 className="fw-bold text-center mb-3 text-danger">
+                      Cancel Forecasting?
+                    </h5>
+                    <p className="text-center">
+                      ⚠️ The current forecasting process will be stopped.
+                    </p>
+
+                    <div className="d-flex justify-content-center gap-2 mt-4">
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => setShowCancelConfirm(false)}>
+                        Back
+                      </button>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={() => {
+                          if (window.currentForecastStream) {
+                            window.currentForecastStream.close();
+                            window.currentForecastStream = null;
+                            setForecastMessage("❌ Forecast canceled by user.");
+                            setForecastProgress(0);
+                            setCurrentPollutant("");
+                            setShowCancelConfirm(false);
+                            setTimeout(() => setIsProcessing(false), 500);
+                          }
+                        }}>
+                        Yeah, do it.
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </>
           )}
 
