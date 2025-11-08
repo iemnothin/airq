@@ -5,6 +5,7 @@ import OutlierModal from "../components/OutlierModal";
 import NoFileModal from "../components/NoFileModal";
 import { fetchOutliers, handleOutliers } from "../helpers/OutlierHelper";
 import ProcessingPanel from "../components/ProcessingPanel";
+import ForecastProgress from "../components/ForecastProgress";
 import ConfirmModal from "../components/ConfirmModal";
 import SuccessToast from "../components/SuccessToast";
 import ErrorToast from "../components/ErrorToast";
@@ -30,6 +31,9 @@ const ModelPage = ({ setError }) => {
   const [showErrorToast, setShowErrorToast] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [showSingleUpload, setShowSingleUpload] = useState(false);
+  const [forecastProgress, setForecastProgress] = useState(0);
+  const [forecastMessage, setForecastMessage] = useState("");
+  const [currentPollutant, setCurrentPollutant] = useState("");
 
   // Info cards
   const [info, setInfo] = useState({
@@ -212,6 +216,33 @@ const ModelPage = ({ setError }) => {
           <p className="mt-3 text-white fs-5 fw-semibold">
             {isProcessing ? "Processing model..." : "Uploading file..."}
           </p>
+
+          {/* Forecast progress per pollutant */}
+          {isProcessing && (
+            <>
+              {currentPollutant && (
+                <div className="text-white mb-2">
+                  Currently processing: <strong>{currentPollutant}</strong>
+                </div>
+              )}
+
+              <div className="progress mt-2" style={{ width: "250px" }}>
+                <div
+                  className="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                  role="progressbar"
+                  style={{
+                    width: `${forecastProgress}%`,
+                    transition: "width 0.3s ease",
+                  }}
+                  aria-valuenow={forecastProgress}
+                  aria-valuemin="0"
+                  aria-valuemax="100">
+                  {forecastProgress.toFixed(0)}%
+                </div>
+              </div>
+            </>
+          )}
+
           {isUploadingFile && uploadProgress > 0 && (
             <div className="progress mt-2" style={{ width: "200px" }}>
               <div
@@ -378,6 +409,7 @@ const ModelPage = ({ setError }) => {
                     {/* Processing panel (Process Basic / Advanced) */}
                     <ProcessingPanel
                       API_BASE={API_BASE}
+                      setIsProcessing={setIsProcessing}
                       onStart={() => setIsProcessing(true)}
                       onDone={(data) => {
                         setIsProcessing(false);
@@ -397,8 +429,11 @@ const ModelPage = ({ setError }) => {
                           setTimeout(() => setShowErrorToast(false), 4500);
                         }
                       }}
+                      setForecastProgress={setForecastProgress}
+                      setForecastMessage={setForecastMessage}
+                      setCurrentPollutant={setCurrentPollutant}
                     />
-
+                    {/* <ForecastProgress API_BASE={API_BASE} /> */}
                     {/* Reset Forecast */}
                     <button
                       className="btn btn-danger btn-sm d-flex align-items-center justify-content-center gap-2"
