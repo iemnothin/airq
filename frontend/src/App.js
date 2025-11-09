@@ -27,9 +27,9 @@ function App() {
   // ✅ Loading global
   if (loading) return <LoadingScreen />;
 
-  // ✅ Backend error page (INI YANG KITA MAU)
-  if (error) {
-    const randomChance = Math.random() < 0.05; // 5% chance setiap error
+  // ✅ Backend error page
+  if (error && typeof error === "string" && error.trim() !== "") {
+    const randomChance = Math.random() < 0.05;
 
     return (
       <BackendErrPage
