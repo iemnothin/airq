@@ -10,7 +10,7 @@ import SuccessToast from "../components/SuccessToast";
 import ErrorToast from "../components/ErrorToast";
 import DragDropUpload from "../components/DragDropUpload";
 
-const API_BASE = "http://127.0.0.1:8000/api/v1/";
+const API_BASE = "https://127.0.0.1:8000/api/v1/";
 
 const ModelPage = ({ setError }) => {
   const [isClearingForecast, setIsClearingForecast] = useState(false);
