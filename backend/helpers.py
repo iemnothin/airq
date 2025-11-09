@@ -1,16 +1,32 @@
 import pandas as pd
 import numpy as np
+import traceback
 from fastapi.responses import JSONResponse
 from db import get_db_connection
 
 def fetch_all_data():
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM air_quality_data ORDER BY waktu ASC")
-    rows = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return rows
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute("SHOW TABLES LIKE 'air_quality_data'")
+        if not cursor.fetchone():
+            # Jika tabel belum ada
+            print("⚠️ Table 'air_quality_data' not found. Returning empty dataset.")
+            return []
+
+        cursor.execute("SELECT * FROM air_quality_data ORDER BY waktu ASC")
+        rows = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        return rows
+
+    except Exception as e:
+        print("❌ Error in fetch_all_data():", e)
+        traceback.print_exc()
+        return []
 
 # def detect_outliers(df: pd.DataFrame):
 #     numeric_cols = ["pm10","pm25","so2","co","o3","no2","hc","kelembaban","suhu"]
