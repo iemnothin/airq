@@ -8,7 +8,7 @@ from db import get_db_connection
 from helpers import fetch_all_data, get_data_info, detect_outliers
 from ml import process_basic_forecast, process_advanced_forecast_stream
 
-router = APIRouter(prefix="/api/v1", tags=["Air Quality Data & Forecasting"])
+router = APIRouter(prefix="/v1", tags=["Air Quality Data & Forecasting"])
 
 # ============================================================
 # 🌍 1. GET All Air Quality Data
