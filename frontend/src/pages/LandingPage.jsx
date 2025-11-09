@@ -48,8 +48,8 @@ const LandingPage = () => {
               variant="outline-success"
               size="lg"
               className="fw-semibold px-4"
-              onClick={() => navigate("/model")}>
-              Lihat Model
+              onClick={() => navigate("/dashboard")}>
+              Mulai Forecasting
             </Button>
           </Col>
         </Row>
