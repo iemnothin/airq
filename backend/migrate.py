@@ -9,7 +9,7 @@ load_dotenv()
 # 🔧 KONFIGURASI DATABASE
 # ==============================
 DB_CONFIG = {
-    "host": os.getenv("DB_HOST", "localhost"),
+    "host": os.getenv("DB_HOST", "127.0.0.1"),
     "user": os.getenv("DB_USER", "abiila_admin"),
     "password": os.getenv("DB_PASS", "2bGBTWV7@y#bnPH"),
     "database": os.getenv("DB_NAME", "abiila_airq_db"),
