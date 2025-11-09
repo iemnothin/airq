@@ -22,7 +22,7 @@
   }
 }
 
-/* Tetap lanjut efek floating */
+/* Efek mengambang halus pada logo/gambar hero */
 .hero-float {
   animation: floatUpDown 4s ease-in-out infinite;
 }
@@ -46,6 +46,7 @@
 /* Warna latar belakang gradient biru muda */
 body {
   background: linear-gradient(180deg, #e7f4ff 0%, #ffffff 100%);
+  overflow-x: hidden;
 }
 
 /* Warna utama teks */
@@ -55,7 +56,7 @@ h4,
   color: #0077cc !important; /* biru langit */
 }
 
-/* Tombol utama */
+/* Tombol solid */
 .btn-success {
   background-color: #0077cc !important;
   border-color: #0077cc !important;
@@ -71,6 +72,7 @@ h4,
 .btn-outline-success {
   color: #0077cc !important;
   border-color: #0077cc !important;
+  transition: all 0.3s ease;
 }
 
 .btn-outline-success:hover {
@@ -79,29 +81,91 @@ h4,
 }
 
 /* =============================
+   HERO SECTION
+   ============================= */
+.hero-image-wrapper img {
+  filter: drop-shadow(0 8px 8px rgba(0, 0, 0, 0.1));
+  max-width: 340px;
+  width: 80%;
+  height: auto;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+}
+
+.hero-image-wrapper img:hover {
+  transform: scale(1.05);
+}
+
+/* =============================
    RESPONSIVENESS
    ============================= */
-@media (max-width: 768px) {
-  h1 {
-    font-size: 1.8rem !important;
-  }
 
-  .lead {
-    font-size: 1rem;
+/* 📱 Mobile (<576px) */
+@media (max-width: 575.98px) {
+  body {
+    text-align: center;
   }
 
   .hero-image-wrapper {
-    margin-bottom: 20px;
+    margin-bottom: 25px;
+  }
+
+  .hero-image-wrapper img {
+    max-width: 220px;
+    width: 90%;
+  }
+
+  h1 {
+    font-size: 1.6rem !important;
+    line-height: 1.3 !important;
+  }
+
+  .lead {
+    font-size: 1rem !important;
+    line-height: 1.5 !important;
+  }
+
+  ol li {
+    font-size: 0.9rem !important;
   }
 
   .btn {
     width: 100%;
+    font-size: 1rem;
+  }
+
+  footer {
+    margin-top: 40px;
   }
 }
 
-@media (max-width: 576px) {
-  .hero-float {
-    max-width: 250px;
+/* 📲 Tablet (≥576px and <992px) */
+@media (min-width: 576px) and (max-width: 991.98px) {
+  .hero-image-wrapper img {
+    max-width: 280px;
+  }
+
+  h1 {
+    font-size: 2rem !important;
+  }
+
+  .lead {
+    font-size: 1.1rem !important;
+  }
+
+  ol li {
+    font-size: 1rem;
+  }
+
+  .btn {
+    font-size: 1.05rem;
+  }
+}
+
+/* 💻 Desktop (≥992px) */
+@media (min-width: 992px) {
+  .hero-image-wrapper img {
+    max-width: 340px;
   }
 }
 

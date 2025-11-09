@@ -10,11 +10,11 @@ const LandingPage = () => {
     <div className="min-vh-100 d-flex flex-column justify-content-center align-items-center text-center text-dark">
       {/* ================= HERO SECTION ================= */}
       <Container className="animate__animated animate__fadeInUp mb-5">
-        <Row className="align-items-center g-5 flex-column-reverse flex-md-row">
+        <Row className="align-items-center g-5 hero-row">
           {/* Hero Image */}
           <Col
             md={6}
-            className="d-flex flex-column align-items-center justify-content-center">
+            className="d-flex flex-column align-items-center justify-content-center col-image">
             <div className="hero-image-wrapper animate__animated hero-rise">
               <img
                 src="https://airq.abiila.com/air-no-outline192.png"
@@ -28,11 +28,11 @@ const LandingPage = () => {
                 }}
               />
             </div>
-            <h1 className="text-primary fw-bold">AirQ</h1>
+            <h1 className="text-primary fw-bold mt-3">AirQ</h1>
           </Col>
 
           {/* Hero Text */}
-          <Col md={6} className="text-md-start text-center">
+          <Col md={6} className="text-md-start text-center col-text">
             <h1 className="fw-bold text-success display-5 mb-3 lh-sm">
               Selamat Datang di <span className="text-dark">AirQ</span>
             </h1>
@@ -44,13 +44,6 @@ const LandingPage = () => {
               informatif, akurat, dan mudah diakses di mana saja.
             </p>
 
-            {/* <Button
-              variant="success"
-              size="lg"
-              className="px-5 py-2 fw-semibold shadow-sm"
-              onClick={() => navigate("/forecast")}>
-              Lihat Forecast
-            </Button> */}
             <Button
               variant="outline-success"
               size="lg"
@@ -64,7 +57,7 @@ const LandingPage = () => {
 
       {/* ================= UCAPAN TERIMA KASIH ================= */}
       <Container
-        className="mt-4 bg-white rounded-4 shadow-sm p-4 p-sm-5 animate__animated animate__fadeInUp"
+        className="mt-4 bg-white d-none d-md-block rounded-md-4 shadow-sm p-4 p-sm-5 animate__animated animate__fadeInUp"
         style={{ maxWidth: "900px" }}>
         <h4 className="fw-bold text-success mb-3 text-center">
           Ucapan Terima Kasih
@@ -103,23 +96,11 @@ const LandingPage = () => {
             mendukung dalam perjalanan akademik ini.
           </li>
         </ol>
-
-        {/* <div className="text-center mt-4">
-          <Button
-            variant="outline-success"
-            size="lg"
-            className="fw-semibold px-4"
-            onClick={() => navigate("/model")}>
-            Lihat Model
-          </Button>
-        </div> */}
       </Container>
 
       {/* ================= FOOTER ================= */}
       <footer className="mt-5 text-muted small text-center">
-        <p className="mb-0">
-          © {new Date().getFullYear()} AirQ | Universitas Pakuan Bogor
-        </p>
+        <p className="mb-0">© {new Date().getFullYear()} AirQ | abiila</p>
       </footer>
     </div>
   );
