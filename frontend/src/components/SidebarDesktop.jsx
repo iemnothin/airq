@@ -6,7 +6,7 @@ const SidebarDesktop = () => {
   const menuItems = [
     { name: "Beranda", icon: "fa-chart-line", path: "/dashboard" },
     { name: "Model", icon: "fa-brain", path: "/model" },
-    { name: "ISPU", icon: "fa-wind", path: "/ispu" },
+    // { name: "ISPU", icon: "fa-wind", path: "/ispu" },
   ];
 
   return (
