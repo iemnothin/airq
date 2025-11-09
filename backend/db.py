@@ -1,13 +1,15 @@
 # Production
 import mysql.connector
 
-def get_db_connection():
-    return mysql.connector.connect(
-        host="127.0.0.1",
-        user="abiila_admin",
-        password="2bGBTWV7@y#bnPH",
-        database="abiila_airq_db"
-    )
+conn = mysql.connector.connect(
+    host="localhost",
+    user="abiila_admin",
+    password="2bGBTWV7@y#bnPH",
+    database="abiila_airq_db"
+)
+
+print("✅ Connected!") if conn.is_connected() else print("❌ Failed")
+
 
 # Local
 # import mysql.connector
