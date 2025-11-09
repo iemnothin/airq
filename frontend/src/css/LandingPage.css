@@ -1,0 +1,132 @@
+/* =============================
+   HERO IMAGE ANIMATION
+   ============================= */
+.hero-rise {
+  opacity: 0;
+  transform: translateY(100px);
+  animation: riseUp 1.2s ease-out forwards;
+}
+
+@keyframes riseUp {
+  0% {
+    opacity: 0;
+    transform: translateY(100px);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0px);
+  }
+}
+
+/* Tetap lanjut efek floating */
+.hero-float {
+  animation: floatUpDown 4s ease-in-out infinite;
+}
+
+@keyframes floatUpDown {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+/* =============================
+   THEME COLORS (BIRU SEGAR)
+   ============================= */
+
+/* Warna latar belakang gradient biru muda */
+body {
+  background: linear-gradient(180deg, #e7f4ff 0%, #ffffff 100%);
+}
+
+/* Warna utama teks */
+h1,
+h4,
+.text-success {
+  color: #0077cc !important; /* biru langit */
+}
+
+/* Tombol utama */
+.btn-success {
+  background-color: #0077cc !important;
+  border-color: #0077cc !important;
+  transition: all 0.3s ease;
+}
+
+.btn-success:hover {
+  background-color: #005fa3 !important;
+  border-color: #005fa3 !important;
+}
+
+/* Tombol outline */
+.btn-outline-success {
+  color: #0077cc !important;
+  border-color: #0077cc !important;
+}
+
+.btn-outline-success:hover {
+  background-color: #0077cc !important;
+  color: white !important;
+}
+
+/* =============================
+   RESPONSIVENESS
+   ============================= */
+@media (max-width: 768px) {
+  h1 {
+    font-size: 1.8rem !important;
+  }
+
+  .lead {
+    font-size: 1rem;
+  }
+
+  .hero-image-wrapper {
+    margin-bottom: 20px;
+  }
+
+  .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 576px) {
+  .hero-float {
+    max-width: 250px;
+  }
+}
+
+/* =============================
+   SUBTLE BACKGROUND EFFECT (AWAN)
+   ============================= */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url("https://www.transparenttextures.com/patterns/white-clouds.png");
+  background-repeat: repeat;
+  opacity: 0.15;
+  animation: cloudMove 60s linear infinite;
+  z-index: -1;
+}
+
+@keyframes cloudMove {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}

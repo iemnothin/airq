@@ -1,75 +1,126 @@
 import { useNavigate } from "react-router-dom";
-import { Button } from "react-bootstrap";
-
+import { Button, Container, Row, Col } from "react-bootstrap";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "animate.css/animate.min.css";
+import "../css/LandingPage.css";
 const LandingPage = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="d-flex flex-column justify-content-center align-items-center vh-100 text-center bg-light px-4">
-      {/* Heading utama */}
-      <h1 className="fw-bold mb-3 text-success">
-        Selamat datang di aplikasi AirQ
-      </h1>
+    <div className="min-vh-100 d-flex flex-column justify-content-center align-items-center text-center text-dark">
+      {/* ================= HERO SECTION ================= */}
+      <Container className="animate__animated animate__fadeInUp mb-5">
+        <Row className="align-items-center g-5 flex-column-reverse flex-md-row">
+          {/* Hero Image */}
+          <Col
+            md={6}
+            className="d-flex flex-column align-items-center justify-content-center">
+            <div className="hero-image-wrapper animate__animated hero-rise">
+              <img
+                src="https://airq.abiila.com/air-no-outline192.png"
+                alt="Air Quality Illustration"
+                className="img-fluid hero-float"
+                style={{
+                  maxWidth: "340px",
+                  width: "80%",
+                  height: "auto",
+                  objectFit: "contain",
+                }}
+              />
+            </div>
+            <h1 className="text-primary fw-bold">AirQ</h1>
+          </Col>
 
-      {/* Deskripsi utama */}
-      <p className="lead mb-4" style={{ maxWidth: "700px" }}>
-        Aplikasi ini dapat melakukan prediksi kualitas udara kota Bogor
-        menggunakan <strong>Facebook Prophet</strong>.
-      </p>
+          {/* Hero Text */}
+          <Col md={6} className="text-md-start text-center">
+            <h1 className="fw-bold text-success display-5 mb-3 lh-sm">
+              Selamat Datang di <span className="text-dark">AirQ</span>
+            </h1>
+            <p
+              className="lead text-secondary mb-4"
+              style={{ lineHeight: "1.6" }}>
+              Aplikasi cerdas untuk memprediksi kualitas udara di Kota Bogor
+              menggunakan model <strong>Facebook Prophet</strong>. Didesain agar
+              informatif, akurat, dan mudah diakses di mana saja.
+            </p>
 
-      {/* Ucapan Terima Kasih */}
-      <div
-        className="text-start bg-white shadow-sm rounded-4 p-4"
-        style={{ maxWidth: "750px" }}>
-        <p className="mb-2">
-          Aplikasi ini dibuat sebagai produk dari tugas akhir developer dengan
-          dukungan dari:
+            {/* <Button
+              variant="success"
+              size="lg"
+              className="px-5 py-2 fw-semibold shadow-sm"
+              onClick={() => navigate("/forecast")}>
+              Lihat Forecast
+            </Button> */}
+            <Button
+              variant="outline-success"
+              size="lg"
+              className="fw-semibold px-4"
+              onClick={() => navigate("/model")}>
+              Lihat Model
+            </Button>
+          </Col>
+        </Row>
+      </Container>
+
+      {/* ================= UCAPAN TERIMA KASIH ================= */}
+      <Container
+        className="mt-4 bg-white rounded-4 shadow-sm p-4 p-sm-5 animate__animated animate__fadeInUp"
+        style={{ maxWidth: "900px" }}>
+        <h4 className="fw-bold text-success mb-3 text-center">
+          Ucapan Terima Kasih
+        </h4>
+
+        <p className="mb-3 text-start">
+          Aplikasi ini dibuat sebagai produk dari tugas akhir dengan dukungan
+          dari:
         </p>
-        <ol className="mb-4">
+
+        <ol className="text-start" style={{ lineHeight: "1.7" }}>
           <li>
-            <strong>Arie Qur’ania, M.Kom.</strong> selaku Pembimbing Utama yang
-            telah memberikan dorongan moril dan motivasi kepada penulis.
+            <strong>Arie Qur’ania, M.Kom.</strong> — Pembimbing Utama yang
+            memberikan dorongan moril dan motivasi.
           </li>
           <li>
-            <strong>Irma Anggraeni, M.Kom.</strong> selaku Pembimbing Pendamping
-            yang telah memberikan bimbingan, semangat, dan motivasi.
+            <strong>Irma Anggraeni, M.Kom.</strong> — Pembimbing Pendamping yang
+            memberikan bimbingan dan semangat.
           </li>
           <li>
-            <strong>Arie Qur’ania, M.Kom.</strong> selaku Ketua Program Studi
-            Ilmu Komputer FMIPA Universitas Pakuan Bogor.
+            <strong>Arie Qur’ania, M.Kom.</strong> — Ketua Program Studi Ilmu
+            Komputer FMIPA Universitas Pakuan Bogor.
           </li>
           <li>
-            <strong>Yusuf Rachmanto</strong> dan <strong>Kamyati</strong>{" "}
-            sebagai orang tua penulis serta
-            <strong> Anisa Puspita Rachman</strong> sebagai kakak penulis yang
-            telah memberikan doa, perhatian, dan semangat.
+            <strong>Yusuf Rachmanto</strong> dan <strong>Kamyati</strong> —
+            Orang tua penulis, serta <strong>Anisa Puspita Rachman</strong> yang
+            memberikan doa dan semangat.
           </li>
           <li>
-            Rekan-rekan <strong>asisten praktikum LABKOM</strong> yang telah
-            memberikan motivasi dan semangat kepada penulis.
-          </li>
-          <li>
-            Rekan-rekan <strong>Tim ICT FMIPA Universitas Pakuan</strong> yang
-            telah memberikan dukungan kepada penulis.
+            Rekan-rekan <strong>asisten praktikum LABKOM</strong> dan{" "}
+            <strong>Tim ICT FMIPA Universitas Pakuan</strong> atas dukungan dan
+            motivasi.
           </li>
           <li>
             <strong>Rizky Kamila</strong>, teman dekat penulis yang selalu
-            menjadi pendengar keluh kesah penulis, memberikan semangat, dan
-            bersama-sama berjuang di Universitas Pakuan.
+            mendukung dalam perjalanan akademik ini.
           </li>
         </ol>
 
-        {/* Tombol Navigasi */}
-        <div className="text-center">
+        {/* <div className="text-center mt-4">
           <Button
-            variant="success"
+            variant="outline-success"
             size="lg"
-            onClick={() => navigate("/forecast")}
-            className="px-5 fw-semibold">
-            Lihat Forecast
+            className="fw-semibold px-4"
+            onClick={() => navigate("/model")}>
+            Lihat Model
           </Button>
-        </div>
-      </div>
+        </div> */}
+      </Container>
+
+      {/* ================= FOOTER ================= */}
+      <footer className="mt-5 text-muted small text-center">
+        <p className="mb-0">
+          © {new Date().getFullYear()} AirQ | Universitas Pakuan Bogor
+        </p>
+      </footer>
     </div>
   );
 };
