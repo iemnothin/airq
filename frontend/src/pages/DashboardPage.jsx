@@ -78,7 +78,7 @@ const DashboardPage = () => {
                         ? "linear-gradient(135deg, #e6f9ef, #b7f0c0)"
                         : "linear-gradient(135deg, #fdecea, #f5b5b2)",
                   }}>
-                  <h6 className="fw-bold text-dark mb-2">FastAPI Backend</h6>
+                  <h6 className="fw-bold text-dark mb-2">Backend</h6>
                   <span
                     style={getStatusStyle("backend", status.backend)}
                     className="mb-2">
@@ -124,7 +124,7 @@ const DashboardPage = () => {
                         ? "linear-gradient(135deg, #e3f6ff, #b9e4ff)"
                         : "linear-gradient(135deg, #f1f1f1, #d6d6d6)",
                   }}>
-                  <h6 className="fw-bold text-dark mb-2">Model Prophet</h6>
+                  <h6 className="fw-bold text-dark mb-2">Model</h6>
                   <span
                     style={getStatusStyle("model_status", status.model_status)}
                     className="mb-2">
@@ -143,7 +143,7 @@ const DashboardPage = () => {
                   style={{
                     background: "linear-gradient(135deg, #e6f4ff, #b7d9ff)",
                   }}>
-                  <h6 className="fw-bold text-dark mb-2">Frontend React</h6>
+                  <h6 className="fw-bold text-dark mb-2">Frontend</h6>
                   <span
                     style={{
                       ...getStatusStyle(),
