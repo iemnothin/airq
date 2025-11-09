@@ -5,7 +5,7 @@ import mysql.connector
 def get_db_connection():
     try:
         conn = mysql.connector.connect(
-            host="localhost",
+            host="127.0.0.1",
             user="abiila_admin",
             password="2bGBTWV7@y#bnPH",
             database="abiila_airq_db"
