@@ -20,22 +20,24 @@ router = APIRouter(prefix="/api/v1", tags=["Air Quality Data & Forecasting"])
     Fetch all recorded air quality data from the `air_quality_data` table.
 
     Each record represents a single timestamp (e.g., hourly) with pollutant concentrations and meteorological parameters.
-
-    **Returned fields:**
-    - `id`: unique record ID  
-    - `waktu`: datetime of measurement  
-    - Pollutants: `pm10`, `pm25`, `so2`, `co`, `o3`, `no2`, `hc`  
-    - Weather parameters: `kelembaban`, `suhu`
-
-    **Use case:**  
-    Used by dashboard frontends to display raw air quality data.
     """
 )
 def get_all_data():
     try:
         rows = fetch_all_data()
-        return rows
+        if not rows:
+            # ✅ Tangani ketika data kosong tapi tetap 200 OK
+            return JSONResponse(
+                content={
+                    "message": "No data available yet.",
+                    "data": [],
+                    "status": "ok"
+                },
+                status_code=200
+            )
+        return JSONResponse(content={"data": rows, "status": "ok"}, status_code=200)
     except Exception as e:
+        traceback.print_exc()
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
 
@@ -45,33 +47,25 @@ def get_all_data():
 @router.get(
     "/data/info",
     summary="Get dataset summary",
-    description="""
-    Returns a summary of the dataset for dashboard display.
-
-    **Includes:**
-    - Total number of data entries  
-    - Whether outliers are present (`outlierClear`)  
-    - Whether missing values (NaN) exist (`nanClear`)  
-    - Total count of outliers (`outlierCount`)  
-    - Total count of NaN cells (`nanCount`)
-
-    **Example response:**
-    ```json
-    {
-        "totalData": 1024,
-        "outlierClear": false,
-        "nanClear": true,
-        "outlierCount": 3,
-        "nanCount": 0
-    }
-    ```
-    """
+    description="Returns dataset summary or default values if no data is available."
 )
 def get_info():
     try:
         rows = fetch_all_data()
+        if not rows:
+            # ✅ Data kosong → kirim default agar dashboard tetap tampil
+            default_info = {
+                "totalData": 0,
+                "outlierClear": True,
+                "nanClear": True,
+                "outlierCount": 0,
+                "nanCount": 0,
+                "message": "No data available yet."
+            }
+            return JSONResponse(content=default_info, status_code=200)
+
         info = get_data_info(rows)
-        return JSONResponse(content=info)
+        return JSONResponse(content=info, status_code=200)
     except Exception as e:
         traceback.print_exc()
         return JSONResponse(content={"error": str(e)}, status_code=500)
@@ -83,33 +77,25 @@ def get_info():
 @router.get(
     "/data/outliers",
     summary="Detect outliers in dataset",
-    description="""
-    Identify statistical outliers from the air quality dataset.
-
-    Detection method:
-    - For small datasets (<10 rows): **Standard Deviation (|x - μ| > 2σ)**  
-    - For larger datasets: **IQR (Interquartile Range)**
-
-    **Output format:**
-    ```json
-    [
-        {"id": 13, "Kolom": "pm10", "Nilai": 512.3},
-        {"id": 47, "Kolom": "so2", "Nilai": 98.2}
-    ]
-    ```
-
-    **Use case:**  
-    Supports data validation and cleaning workflows.
-    """
+    description="Detect outliers safely even when dataset is empty."
 )
 def get_outliers():
     try:
         rows = fetch_all_data()
         if not rows:
-            return []
+            # ✅ Tidak error walau kosong, tetap kirim format aman
+            return JSONResponse(
+                content={
+                    "message": "No data available for outlier detection.",
+                    "outliers": [],
+                    "status": "ok"
+                },
+                status_code=200
+            )
+
         df = pd.DataFrame(rows)
         outliers = detect_outliers(df)
-        return JSONResponse(content=outliers)
+        return JSONResponse(content={"outliers": outliers, "status": "ok"}, status_code=200)
     except Exception as e:
         traceback.print_exc()
         return JSONResponse(content={"error": str(e)}, status_code=500)
