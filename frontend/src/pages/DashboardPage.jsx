@@ -12,7 +12,7 @@ const DashboardPage = () => {
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const response = await fetch("https://airq.abiila.com/api/v1/status");
+        const response = await fetch("https://127.0.0.1/api/v1/status");
         const data = await response.json();
         setStatus(data);
       } catch (error) {
