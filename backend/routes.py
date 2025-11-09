@@ -25,16 +25,6 @@ router = APIRouter(prefix="/api/v1", tags=["Air Quality Data & Forecasting"])
 def get_all_data():
     try:
         rows = fetch_all_data()
-        if not rows:
-            # ✅ Tangani ketika data kosong tapi tetap 200 OK
-            return JSONResponse(
-                content={
-                    "message": "No data available yet.",
-                    "data": [],
-                    "status": "ok"
-                },
-                status_code=200
-            )
         return JSONResponse(content={"data": rows, "status": "ok"}, status_code=200)
     except Exception as e:
         traceback.print_exc()
@@ -83,15 +73,7 @@ def get_outliers():
     try:
         rows = fetch_all_data()
         if not rows:
-            # ✅ Tidak error walau kosong, tetap kirim format aman
-            return JSONResponse(
-                content={
-                    "message": "No data available for outlier detection.",
-                    "outliers": [],
-                    "status": "ok"
-                },
-                status_code=200
-            )
+            return []
 
         df = pd.DataFrame(rows)
         outliers = detect_outliers(df)
