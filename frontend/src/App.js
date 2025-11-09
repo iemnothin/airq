@@ -27,9 +27,9 @@ function App() {
   // ✅ Loading global
   if (loading) return <LoadingScreen />;
 
-  // ✅ Backend error page
-  if (error && typeof error === "string" && error.trim() !== "") {
-    const randomChance = Math.random() < 0.05;
+  // ✅ Backend error page (INI YANG KITA MAU)
+  if (error) {
+    const randomChance = Math.random() < 0.05; // 5% chance setiap error
 
     return (
       <BackendErrPage
@@ -57,14 +57,14 @@ function App() {
             element={<DashboardPage setError={setError} />}
           />
           {/* Halaman Forecast page */}
-          {/* <Route
+          <Route
             path="/forecast"
             element={<ForecastPage setError={setError} />}
-          /> */}
+          />
           {/* Halaman Model page */}
           <Route path="/model" element={<ModelPage setError={setError} />} />
           {/* Halaman ISPU page */}
-          {/* <Route path="/ispu" element={<IspuPage setError={setError} />} /> */}
+          <Route path="/ispu" element={<IspuPage setError={setError} />} />
         </Route>
       </Routes>
     </Router>
