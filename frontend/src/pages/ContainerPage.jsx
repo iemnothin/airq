@@ -44,10 +44,10 @@ const ContainerPage = () => {
 
     if (distance < 0) {
       // Swipe LEFT
-      if (location.pathname === "/forecast") navigate("/model");
+      if (location.pathname === "/dashboard") navigate("/model");
     } else {
       // Swipe RIGHT
-      if (location.pathname === "/model") navigate("/forecast");
+      if (location.pathname === "/model") navigate("/dashboard");
     }
   };
 

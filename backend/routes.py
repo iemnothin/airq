@@ -572,3 +572,68 @@ def clear_forecast():
     except Exception as e:
         traceback.print_exc()
         return JSONResponse({"error": str(e)}, status_code=500)
+
+# ============================================================
+# 🧩 11. SYSTEM STATUS & TECHNOLOGIES
+# ============================================================
+@router.get(
+    "/status",
+    summary="Check backend system and technology status",
+    description="""
+    Returns the current operational status of the **AirQ system**, including backend, database, and model readiness.
+    Also lists all technologies used in this project stack.
+
+    **Response Example:**
+    ```json
+    {
+      "backend": "online",
+      "database": "connected",
+      "model_status": "ready",
+      "server": "VPS Almalinux + cPanel + Apache",
+      "technologies": {
+        "frontend": "ReactJS + Bootstrap 5",
+        "backend": "Python FastAPI",
+        "ml_model": "Facebook Prophet",
+        "database": "MySQL / PostgreSQL",
+        "deployment": "Gunicorn + Systemd",
+        "os": "AlmaLinux 9"
+      },
+      "timestamp": "2025-11-09T20:45:10"
+    }
+    ```
+    """
+)
+def system_status():
+    from sqlalchemy import create_engine, text
+    import os
+
+    db_status = "disconnected"
+    try:
+        # 🔍 Ubah sesuai database kamu
+        engine = create_engine(os.getenv("DATABASE_URL", "mysql+pymysql://root@localhost/airq"))
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        db_status = "connected"
+    except Exception as e:
+        print("Database connection failed:", e)
+        db_status = "disconnected"
+
+    model_status = "ready"  # kalau mau dinamis bisa cek dari ml.py nanti
+
+    system_info = {
+        "backend": "online",
+        "database": db_status,
+        "model_status": model_status,
+        "server": "VPS Almalinux + cPanel + Apache",
+        "technologies": {
+            "frontend": "ReactJS + Bootstrap 5",
+            "backend": "Python FastAPI",
+            "ml_model": "Facebook Prophet",
+            "database": "MySQL / PostgreSQL",
+            "deployment": "Gunicorn + Systemd",
+            "os": "AlmaLinux 9"
+        },
+        "timestamp": datetime.now().isoformat()
+    }
+
+    return JSONResponse(content=system_info, status_code=200)

@@ -10,6 +10,7 @@ import "./App.css";
 
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
+import DashboardPage from "./pages/DashboardPage";
 import ForecastPage from "./pages/ForecastPage";
 import ModelPage from "./pages/ModelPage";
 import ContainerPage from "./pages/ContainerPage";
@@ -50,6 +51,11 @@ function App() {
 
         {/* Halaman processing page */}
         <Route element={<ContainerPage />}>
+          {/* Halaman Forecast page */}
+          <Route
+            path="/dashboard"
+            element={<DashboardPage setError={setError} />}
+          />
           {/* Halaman Forecast page */}
           <Route
             path="/forecast"

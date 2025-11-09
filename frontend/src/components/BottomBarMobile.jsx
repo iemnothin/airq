@@ -4,8 +4,9 @@ const BottomBarMobile = () => {
   const location = useLocation();
 
   const menuItems = [
-    { name: "Beranda", icon: "fa-house", path: "/forecast" },
+    { name: "Beranda", icon: "fa-house", path: "/dashboard" },
     { name: "Model", icon: "fa-brain", path: "/model" },
+    { name: "ISPU", icon: "fa-wind", path: "/ispu" },
   ];
 
   return (
