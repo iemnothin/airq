@@ -579,10 +579,7 @@ def system_status():
     try:
         # 🔍 Ubah sesuai database kamu
         engine = create_engine(
-            os.getenv(
-                "DATABASE_URL",
-                "mysql+pymysql://abiila_admin:2bGBTWV7@y#bnPH@localhost/abiila_airq_db"
-            )
+            "mysql+pymysql://abiila_admin:2bGBTWV7@y#bnPH@127.0.0.1/abiila_airq_db"
         )
 
         with engine.connect() as conn:
