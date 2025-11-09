@@ -1,6 +1,5 @@
-// src/pages/DashboardPage.jsx
 import { useEffect, useState } from "react";
-import { Card, Row, Col, Spinner, Badge } from "react-bootstrap";
+import { Card, Row, Col, Spinner } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "animate.css/animate.min.css";
 
@@ -8,7 +7,6 @@ const DashboardPage = () => {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Contoh endpoint FastAPI kamu: /api/status
   useEffect(() => {
     const fetchStatus = async () => {
       try {
@@ -25,6 +23,28 @@ const DashboardPage = () => {
 
     fetchStatus();
   }, []);
+
+  const getStatusStyle = (key, value) => {
+    const baseStyle = {
+      borderRadius: "12px",
+      padding: "6px 12px",
+      display: "inline-block",
+      fontWeight: 600,
+      color: "white",
+      fontSize: "0.9rem",
+    };
+
+    const colorMap = {
+      backend: value === "online" ? "#28a745" : "#dc3545",
+      database: value === "connected" ? "#198754" : "#dc3545",
+      model_status: value === "ready" ? "#0dcaf0" : "#6c757d",
+    };
+
+    return {
+      ...baseStyle,
+      backgroundColor: colorMap[key] || "#6c757d",
+    };
+  };
 
   return (
     <div className="container py-4 animate__animated animate__fadeIn">
@@ -46,66 +66,123 @@ const DashboardPage = () => {
               <Spinner animation="border" variant="success" />
               <p className="text-muted mt-2">Memuat status sistem...</p>
             </div>
+          ) : status ? (
+            <Row className="g-4">
+              {/* BACKEND */}
+              <Col md={4} sm={6}>
+                <Card
+                  className="border-0 rounded-4 shadow-sm h-100 text-center p-3"
+                  style={{
+                    background:
+                      status.backend === "online"
+                        ? "linear-gradient(135deg, #e6f9ef, #b7f0c0)"
+                        : "linear-gradient(135deg, #fdecea, #f5b5b2)",
+                  }}>
+                  <h6 className="fw-bold text-dark mb-2">FastAPI Backend</h6>
+                  <span
+                    style={getStatusStyle("backend", status.backend)}
+                    className="mb-2">
+                    {status.backend === "online" ? "Online" : "Offline"}
+                  </span>
+                  <p className="small text-muted mt-2 mb-0">
+                    API utama sistem prediksi udara.
+                  </p>
+                </Card>
+              </Col>
+
+              {/* DATABASE */}
+              <Col md={4} sm={6}>
+                <Card
+                  className="border-0 rounded-4 shadow-sm h-100 text-center p-3"
+                  style={{
+                    background:
+                      status.database === "connected"
+                        ? "linear-gradient(135deg, #e9f8ee, #b9f3c8)"
+                        : "linear-gradient(135deg, #fdecea, #f5b5b2)",
+                  }}>
+                  <h6 className="fw-bold text-dark mb-2">Database</h6>
+                  <span
+                    style={getStatusStyle("database", status.database)}
+                    className="mb-2">
+                    {status.database === "connected"
+                      ? "Connected"
+                      : "Disconnected"}
+                  </span>
+                  <p className="small text-muted mt-2 mb-0">
+                    Penyimpanan data kualitas udara.
+                  </p>
+                </Card>
+              </Col>
+
+              {/* MODEL PROPHET */}
+              <Col md={4} sm={6}>
+                <Card
+                  className="border-0 rounded-4 shadow-sm h-100 text-center p-3"
+                  style={{
+                    background:
+                      status.model_status === "ready"
+                        ? "linear-gradient(135deg, #e3f6ff, #b9e4ff)"
+                        : "linear-gradient(135deg, #f1f1f1, #d6d6d6)",
+                  }}>
+                  <h6 className="fw-bold text-dark mb-2">Model Prophet</h6>
+                  <span
+                    style={getStatusStyle("model_status", status.model_status)}
+                    className="mb-2">
+                    {status.model_status || "Unknown"}
+                  </span>
+                  <p className="small text-muted mt-2 mb-0">
+                    Model ML prediksi polusi udara.
+                  </p>
+                </Card>
+              </Col>
+
+              {/* FRONTEND */}
+              <Col md={4} sm={6}>
+                <Card
+                  className="border-0 rounded-4 shadow-sm h-100 text-center p-3"
+                  style={{
+                    background: "linear-gradient(135deg, #e6f4ff, #b7d9ff)",
+                  }}>
+                  <h6 className="fw-bold text-dark mb-2">Frontend React</h6>
+                  <span
+                    style={{
+                      ...getStatusStyle(),
+                      backgroundColor: "#0d6efd",
+                    }}>
+                    Operational
+                  </span>
+                  <p className="small text-muted mt-2 mb-0">
+                    Antarmuka pengguna aplikasi AirQ.
+                  </p>
+                </Card>
+              </Col>
+
+              {/* WEB SERVER */}
+              <Col md={4} sm={6}>
+                <Card
+                  className="border-0 rounded-4 shadow-sm h-100 text-center p-3"
+                  style={{
+                    background: "linear-gradient(135deg, #fef9e7, #fff3b0)",
+                  }}>
+                  <h6 className="fw-bold text-dark mb-2">Web Server</h6>
+                  <span
+                    style={{
+                      ...getStatusStyle(),
+                      backgroundColor: "#ffc107",
+                      color: "#000",
+                    }}>
+                    Apache (cPanel)
+                  </span>
+                  <p className="small text-muted mt-2 mb-0">
+                    Menjalankan FastAPI & ReactJS.
+                  </p>
+                </Card>
+              </Col>
+            </Row>
           ) : (
-            <>
-              {status ? (
-                <Row className="g-3">
-                  <Col md={4} sm={6}>
-                    <Card className="border-0 bg-light rounded-3 p-3 h-100">
-                      <h6 className="text-success mb-1">FastAPI Backend</h6>
-                      <Badge
-                        bg={status.backend === "online" ? "success" : "danger"}>
-                        {status.backend === "online" ? "Online" : "Offline"}
-                      </Badge>
-                    </Card>
-                  </Col>
-
-                  <Col md={4} sm={6}>
-                    <Card className="border-0 bg-light rounded-3 p-3 h-100">
-                      <h6 className="text-success mb-1">Database</h6>
-                      <Badge
-                        bg={
-                          status.database === "connected" ? "success" : "danger"
-                        }>
-                        {status.database === "connected"
-                          ? "Connected"
-                          : "Disconnected"}
-                      </Badge>
-                    </Card>
-                  </Col>
-
-                  <Col md={4} sm={6}>
-                    <Card className="border-0 bg-light rounded-3 p-3 h-100">
-                      <h6 className="text-success mb-1">Model Prophet</h6>
-                      <Badge
-                        bg={
-                          status.model_status === "ready" ? "info" : "secondary"
-                        }>
-                        {status.model_status || "Unknown"}
-                      </Badge>
-                    </Card>
-                  </Col>
-
-                  <Col md={4} sm={6}>
-                    <Card className="border-0 bg-light rounded-3 p-3 h-100">
-                      <h6 className="text-success mb-1">Frontend React</h6>
-                      <Badge bg="success">Operational</Badge>
-                    </Card>
-                  </Col>
-
-                  <Col md={4} sm={6}>
-                    <Card className="border-0 bg-light rounded-3 p-3 h-100">
-                      <h6 className="text-success mb-1">Web Server</h6>
-                      <Badge bg="success">Apache (cPanel)</Badge>
-                    </Card>
-                  </Col>
-                </Row>
-              ) : (
-                <div className="text-center text-danger py-3">
-                  ❌ Tidak dapat memuat status sistem.
-                </div>
-              )}
-            </>
+            <div className="text-center text-danger py-3">
+              ❌ Tidak dapat memuat status sistem.
+            </div>
           )}
         </Card.Body>
       </Card>
@@ -117,65 +194,46 @@ const DashboardPage = () => {
             💻 Teknologi yang Digunakan
           </h5>
           <Row className="g-3">
-            <Col md={4} sm={6}>
-              <Card className="border-0 bg-light rounded-3 p-3 h-100">
-                <h6 className="fw-bold text-dark mb-1">Frontend</h6>
-                <p className="text-muted mb-1">ReactJS + Bootstrap 5</p>
-                <small className="text-secondary">
-                  Komponen interaktif, routing dinamis, dan tampilan responsif.
-                </small>
-              </Card>
-            </Col>
-
-            <Col md={4} sm={6}>
-              <Card className="border-0 bg-light rounded-3 p-3 h-100">
-                <h6 className="fw-bold text-dark mb-1">Backend</h6>
-                <p className="text-muted mb-1">Python FastAPI</p>
-                <small className="text-secondary">
-                  REST API untuk prediksi dan manajemen data.
-                </small>
-              </Card>
-            </Col>
-
-            <Col md={4} sm={6}>
-              <Card className="border-0 bg-light rounded-3 p-3 h-100">
-                <h6 className="fw-bold text-dark mb-1">Machine Learning</h6>
-                <p className="text-muted mb-1">Facebook Prophet</p>
-                <small className="text-secondary">
-                  Model prediksi tren polusi udara (PM10).
-                </small>
-              </Card>
-            </Col>
-
-            <Col md={4} sm={6}>
-              <Card className="border-0 bg-light rounded-3 p-3 h-100">
-                <h6 className="fw-bold text-dark mb-1">Database</h6>
-                <p className="text-muted mb-1">PostgreSQL / MySQL</p>
-                <small className="text-secondary">
-                  Penyimpanan data udara dan hasil prediksi.
-                </small>
-              </Card>
-            </Col>
-
-            <Col md={4} sm={6}>
-              <Card className="border-0 bg-light rounded-3 p-3 h-100">
-                <h6 className="fw-bold text-dark mb-1">Server</h6>
-                <p className="text-muted mb-1">VPS Almalinux + cPanel</p>
-                <small className="text-secondary">
-                  Meng-host backend FastAPI & frontend React.
-                </small>
-              </Card>
-            </Col>
-
-            <Col md={4} sm={6}>
-              <Card className="border-0 bg-light rounded-3 p-3 h-100">
-                <h6 className="fw-bold text-dark mb-1">Deployment</h6>
-                <p className="text-muted mb-1">Gunicorn + Systemd</p>
-                <small className="text-secondary">
-                  Menjalankan FastAPI sebagai service otomatis di VPS.
-                </small>
-              </Card>
-            </Col>
+            {[
+              {
+                title: "Frontend",
+                tech: "ReactJS + Bootstrap 5",
+                desc: "Komponen interaktif, routing dinamis, dan tampilan responsif.",
+              },
+              {
+                title: "Backend",
+                tech: "Python FastAPI",
+                desc: "REST API untuk prediksi dan manajemen data.",
+              },
+              {
+                title: "Machine Learning",
+                tech: "Facebook Prophet",
+                desc: "Model prediksi tren polusi udara (PM10).",
+              },
+              {
+                title: "Database",
+                tech: "MySQL / PostgreSQL",
+                desc: "Penyimpanan data udara dan hasil prediksi.",
+              },
+              {
+                title: "Server",
+                tech: "VPS AlmaLinux + cPanel",
+                desc: "Meng-host backend FastAPI & frontend React.",
+              },
+              {
+                title: "Deployment",
+                tech: "Gunicorn + Systemd",
+                desc: "Menjalankan FastAPI sebagai service otomatis di VPS.",
+              },
+            ].map((item, idx) => (
+              <Col md={4} sm={6} key={idx}>
+                <Card className="border-0 bg-light rounded-4 p-3 h-100">
+                  <h6 className="fw-bold text-dark mb-1">{item.title}</h6>
+                  <p className="text-muted mb-1">{item.tech}</p>
+                  <small className="text-secondary">{item.desc}</small>
+                </Card>
+              </Col>
+            ))}
           </Row>
         </Card.Body>
       </Card>
