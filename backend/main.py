@@ -22,7 +22,7 @@ app = FastAPI(
 # Enable CORS (optional but recommended for frontend)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # bisa kamu ubah nanti ke domain frontend kamu
+    allow_origins=["https://airq.abiila.com/"],  # bisa kamu ubah nanti ke domain frontend kamu
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
