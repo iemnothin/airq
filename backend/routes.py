@@ -578,7 +578,13 @@ def system_status():
     db_status = "disconnected"
     try:
         # 🔍 Ubah sesuai database kamu
-        engine = create_engine(os.getenv("DATABASE_URL", "mysql+pymysql://root@127.0.0.1:8000/api/v1"))
+        engine = create_engine(
+            os.getenv(
+                "DATABASE_URL",
+                "mysql+pymysql://abiila_admin:2bGBTWV7@y#bnPH@localhost/abiila_airq_db"
+            )
+        )
+
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
         db_status = "connected"
