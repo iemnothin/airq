@@ -24,27 +24,15 @@ const DashboardPage = () => {
     fetchStatus();
   }, []);
 
-  const getStatusStyle = (key, value) => {
-    const baseStyle = {
-      borderRadius: "12px",
-      padding: "6px 12px",
-      display: "inline-block",
-      fontWeight: 600,
-      color: "white",
-      fontSize: "0.9rem",
-    };
-
-    const colorMap = {
-      backend: value === "online" ? "#28a745" : "#dc3545",
-      database: value === "connected" ? "#198754" : "#dc3545",
-      model_status: value === "ready" ? "#0dcaf0" : "#6c757d",
-    };
-
-    return {
-      ...baseStyle,
-      backgroundColor: colorMap[key] || "#6c757d",
-    };
-  };
+  const getStatusStyle = (isActive) => ({
+    borderRadius: "12px",
+    padding: "6px 16px",
+    display: "inline-block",
+    fontWeight: 600,
+    color: "white",
+    fontSize: "0.9rem",
+    backgroundColor: isActive ? "#28a745" : "#dc3545", // ✅ hijau / merah
+  });
 
   return (
     <div className="container py-4 animate__animated animate__fadeIn">
@@ -75,13 +63,11 @@ const DashboardPage = () => {
                   style={{
                     background:
                       status.backend === "online"
-                        ? "linear-gradient(135deg, #e6f9ef, #b7f0c0)"
-                        : "linear-gradient(135deg, #fdecea, #f5b5b2)",
+                        ? "linear-gradient(135deg, #e6f9ef, #c1f0cd)"
+                        : "linear-gradient(135deg, #fdecea, #f7c6c5)",
                   }}>
                   <h6 className="fw-bold text-dark mb-2">Backend</h6>
-                  <span
-                    style={getStatusStyle("backend", status.backend)}
-                    className="mb-2">
+                  <span style={getStatusStyle(status.backend === "online")}>
                     {status.backend === "online" ? "Online" : "Offline"}
                   </span>
                   <p className="small text-muted mt-2 mb-0">
@@ -97,13 +83,11 @@ const DashboardPage = () => {
                   style={{
                     background:
                       status.database === "connected"
-                        ? "linear-gradient(135deg, #e9f8ee, #b9f3c8)"
-                        : "linear-gradient(135deg, #fdecea, #f5b5b2)",
+                        ? "linear-gradient(135deg, #e6f9ef, #c1f0cd)"
+                        : "linear-gradient(135deg, #fdecea, #f7c6c5)",
                   }}>
                   <h6 className="fw-bold text-dark mb-2">Database</h6>
-                  <span
-                    style={getStatusStyle("database", status.database)}
-                    className="mb-2">
+                  <span style={getStatusStyle(status.database === "connected")}>
                     {status.database === "connected"
                       ? "Connected"
                       : "Disconnected"}
@@ -121,14 +105,12 @@ const DashboardPage = () => {
                   style={{
                     background:
                       status.model_status === "ready"
-                        ? "linear-gradient(135deg, #e3f6ff, #b9e4ff)"
-                        : "linear-gradient(135deg, #f1f1f1, #d6d6d6)",
+                        ? "linear-gradient(135deg, #e6f9ef, #c1f0cd)"
+                        : "linear-gradient(135deg, #fdecea, #f7c6c5)",
                   }}>
                   <h6 className="fw-bold text-dark mb-2">Model</h6>
-                  <span
-                    style={getStatusStyle("model_status", status.model_status)}
-                    className="mb-2">
-                    {status.model_status || "Unknown"}
+                  <span style={getStatusStyle(status.model_status === "ready")}>
+                    {status.model_status === "ready" ? "Ready" : "Not Ready"}
                   </span>
                   <p className="small text-muted mt-2 mb-0">
                     Model ML prediksi polusi udara.
@@ -138,19 +120,9 @@ const DashboardPage = () => {
 
               {/* FRONTEND */}
               <Col md={4} sm={6}>
-                <Card
-                  className="border-0 rounded-4 shadow-sm h-100 text-center p-3"
-                  style={{
-                    background: "linear-gradient(135deg, #e6f4ff, #b7d9ff)",
-                  }}>
+                <Card className="border-0 rounded-4 shadow-sm h-100 text-center p-3 bg-light">
                   <h6 className="fw-bold text-dark mb-2">Frontend</h6>
-                  <span
-                    style={{
-                      ...getStatusStyle(),
-                      backgroundColor: "#0d6efd",
-                    }}>
-                    Operational
-                  </span>
+                  <span style={getStatusStyle(true)}>Online</span>
                   <p className="small text-muted mt-2 mb-0">
                     Antarmuka pengguna aplikasi AirQ.
                   </p>
@@ -159,20 +131,9 @@ const DashboardPage = () => {
 
               {/* WEB SERVER */}
               <Col md={4} sm={6}>
-                <Card
-                  className="border-0 rounded-4 shadow-sm h-100 text-center p-3"
-                  style={{
-                    background: "linear-gradient(135deg, #fef9e7, #fff3b0)",
-                  }}>
+                <Card className="border-0 rounded-4 shadow-sm h-100 text-center p-3 bg-light">
                   <h6 className="fw-bold text-dark mb-2">Web Server</h6>
-                  <span
-                    style={{
-                      ...getStatusStyle(),
-                      backgroundColor: "#ffc107",
-                      color: "#000",
-                    }}>
-                    Apache (cPanel)
-                  </span>
+                  <span style={getStatusStyle(true)}>Active</span>
                   <p className="small text-muted mt-2 mb-0">
                     Menjalankan FastAPI & ReactJS.
                   </p>
