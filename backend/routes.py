@@ -557,13 +557,13 @@ def clear_forecast():
       "backend": "online",
       "database": "connected",
       "model_status": "ready",
-      "server": "VPS Almalinux + cPanel + Apache",
+      "server": "Apache",
       "technologies": {
-        "frontend": "ReactJS + Bootstrap 5",
-        "backend": "Python FastAPI",
+        "frontend": "ReactJS",
+        "backend": "FastAPI",
         "ml_model": "Facebook Prophet",
-        "database": "MySQL / PostgreSQL",
-        "deployment": "Gunicorn + Systemd",
+        "database": "MySQL",
+        "deployment": "Gunicorn",
         "os": "AlmaLinux 9"
       },
       "timestamp": "2025-11-09T20:45:10"
@@ -577,9 +577,8 @@ def system_status():
 
     db_status = "disconnected"
     try:
-        # 🔍 Ubah sesuai database kamu
         engine = create_engine(
-            "mysql+pymysql://abiila_admin_airq:2!7oiFWMIF68@127.0.0.1/abiila_airq_db"
+            "mysql+pymysql://abiila_admin:2bGBTWV7%40y%23bnPH@127.0.0.1/abiila_airq_db"
         )
 
         with engine.connect() as conn:
@@ -589,19 +588,19 @@ def system_status():
         print("Database connection failed:", e)
         db_status = "disconnected"
 
-    model_status = "ready"  # kalau mau dinamis bisa cek dari ml.py nanti
+    model_status = "ready"
 
     system_info = {
         "backend": "online",
         "database": db_status,
         "model_status": model_status,
-        "server": "VPS Almalinux + cPanel + Apache",
+        "server": "Apache",
         "technologies": {
-            "frontend": "ReactJS + Bootstrap 5",
-            "backend": "Python FastAPI",
+            "frontend": "ReactJS",
+            "backend": "FastAPI",
             "ml_model": "Facebook Prophet",
-            "database": "MySQL / PostgreSQL",
-            "deployment": "Gunicorn + Systemd",
+            "database": "MySQL",
+            "deployment": "Gunicorn",
             "os": "AlmaLinux 9"
         },
         "timestamp": datetime.now().isoformat()
