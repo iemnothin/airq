@@ -603,7 +603,7 @@ def process_advanced_all():
             for idx, pol in enumerate(pollutants, start=1):
                 try:
                     yield f"data: {json.dumps({'status': 'processing', 'pollutant': pol.upper(), 'progress': round((idx - 1) / total * 100, 2)})}\n\n"
-                    result = process_advanced_forecast(df, [pol])
+                    result = process_advanced_forecast_stream(df, [pol])
                     yield f"data: {json.dumps({'status': 'done', 'pollutant': pol.upper(), 'progress': round(idx / total * 100, 2)})}\n\n"
                 except Exception as e:
                     yield f"data: {json.dumps({'status': 'error', 'pollutant': pol.upper(), 'message': str(e)})}\n\n"
