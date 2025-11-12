@@ -38,7 +38,7 @@ const DashboardPage = () => {
     <div className="container py-4 animate__animated animate__fadeIn">
       {/* ================= HEADER ================= */}
       <div className="mb-4 text-center text-md-start">
-        <h2 className="fw-bold text-success mb-1">Dashboard Sistem AirQ 🌤️</h2>
+        <h2 className="fw-bold text-success mb-1">Dashboard Sistem AirQ</h2>
         <p className="text-muted mb-0">
           Ringkasan status sistem dan teknologi yang digunakan.
         </p>
@@ -47,7 +47,7 @@ const DashboardPage = () => {
       {/* ================= STATUS SISTEM ================= */}
       <Card className="mb-4 shadow-sm border-0 rounded-4">
         <Card.Body>
-          <h5 className="fw-bold text-primary mb-3">🔧 Status Sistem</h5>
+          <h5 className="fw-bold text-primary mb-3">Status Sistem</h5>
 
           {loading ? (
             <div className="text-center py-3">
@@ -152,7 +152,7 @@ const DashboardPage = () => {
       <Card className="shadow-sm border-0 rounded-4">
         <Card.Body>
           <h5 className="fw-bold text-primary mb-3">
-            💻 Teknologi yang Digunakan
+            Teknologi yang Digunakan
           </h5>
           <Row className="g-3">
             {[
