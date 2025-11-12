@@ -765,13 +765,13 @@ def system_status():
     Checks database connectivity and returns a summary of services and technologies.
     """
     from sqlalchemy import create_engine, text
+    from urllib.parse import quote_plus
     import os
 
     db_status = "disconnected"
     try:
-        engine = create_engine(
-            "mysql+pymysql://abiila_admin:2!7oiFWMIF68@127.0.0.1/abiila_airq_db"
-        )
+        password = quote_plus("2!7oiFWMIF68")
+        engine = create_engine(f"mysql+pymysql://abiila_admin:{password}@127.0.0.1/abiila_airq_db")
 
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
