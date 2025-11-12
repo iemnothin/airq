@@ -770,7 +770,7 @@ def system_status():
     db_status = "disconnected"
     try:
         engine = create_engine(
-            "mysql+pymysql://abiila:2!7oiFWMIF68@127.0.0.1/abiila_airq_db"
+            "mysql+pymysql://abiila_admin:2!7oiFWMIF68@127.0.0.1/abiila_airq_db"
         )
 
         with engine.connect() as conn:

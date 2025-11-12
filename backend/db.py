@@ -7,7 +7,7 @@ def get_db_connection():
         conn = mysql.connector.connect(
             host="127.0.0.1",
             user="abiila_admin",
-            password="2bGBTWV7@y#bnPH",
+            password="2!7oiFWMIF68",
             database="abiila_airq_db"
         )
         return conn
