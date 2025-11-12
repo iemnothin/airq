@@ -1,4 +1,7 @@
-import io, traceback, time, json
+import io
+import traceback
+import time
+import json
 from fastapi.responses import StreamingResponse
 from datetime import datetime
 from fastapi import APIRouter, UploadFile, File, Request
@@ -6,23 +9,64 @@ from fastapi.responses import JSONResponse
 import pandas as pd
 from db import get_db_connection
 from helpers import fetch_all_data, get_data_info, detect_outliers
-from ml import process_basic_forecast, process_advanced_forecast_stream
+from ml import (
+    process_basic_forecast,
+    process_advanced_forecast_stream
+)
 
 router = APIRouter(prefix="/api/v1", tags=["Air Quality Data & Forecasting"])
 
 # ============================================================
-# 🌍 1. GET All Air Quality Data
+# 1. GET All Air Quality Data
 # ============================================================
+
 @router.get(
     "/data",
-    summary="Retrieve all air quality data",
+    summary="[AirQ] Retrieve all air quality data",
     description="""
     Fetch all recorded air quality data from the `air_quality_data` table.
 
     Each record represents a single timestamp (e.g., hourly) with pollutant concentrations and meteorological parameters.
-    """
+
+    ---
+    ### 🔹 Example cURL:
+    ```bash
+    curl -X GET "https://airq.abiila.com/api/v1/data" -H "accept: application/json"
+    ```
+
+    ### 🔹 Example Response:
+    ```json
+    {
+      "status": "ok",
+      "data": [
+        {
+          "id": 1,
+          "waktu": "2025-11-12 00:00:00",
+          "pm10": 42.1,
+          "pm25": 17.8,
+          "so2": 4.2,
+          "co": 341,
+          "o3": 32,
+          "no2": 15,
+          "hc": 371,
+          "kelembaban": 72,
+          "suhu": 29
+        }
+      ]
+    }
+    ```
+    """,
+    responses={
+        200: {"description": "Data retrieved successfully"},
+        500: {"description": "Internal server error"},
+    },
 )
 def get_all_data():
+    """
+    Retrieve all historical air quality records from the database.
+
+    Used by dashboard and analytics modules to display pollutant trends.
+    """
     try:
         rows = fetch_all_data()
         return JSONResponse(content={"data": rows, "status": "ok"}, status_code=200)
@@ -32,25 +76,36 @@ def get_all_data():
 
 
 # ============================================================
-# 📊 2. DATA INFO (for dashboard cards)
+# 2. DATA INFO (for dashboard cards)
 # ============================================================
 @router.get(
     "/data/info",
-    summary="Get dataset summary",
-    description="Returns dataset summary or default values if no data is available."
+    summary="[AirQ] Get dataset summary",
+    description="Returns dataset summary or default values if no data is available.",
+    responses={
+        200: {"description": "Dataset summary returned or default values when empty"},
+        500: {"description": "Internal server error"},
+    },
 )
 def get_info():
+    """
+    Returns summary information used by dashboard cards:
+    - totalData: total number of rows
+    - outlierClear / nanClear: boolean indicators
+    - outlierCount / nanCount: counts of problematic values
+
+    If dataset is empty, returns sensible defaults so the dashboard remains usable.
+    """
     try:
         rows = fetch_all_data()
         if not rows:
-            # ✅ Data kosong → kirim default agar dashboard tetap tampil
             default_info = {
                 "totalData": 0,
                 "outlierClear": True,
                 "nanClear": True,
                 "outlierCount": 0,
                 "nanCount": 0,
-                "message": "No data available yet."
+                "message": "No data available yet.",
             }
             return JSONResponse(content=default_info, status_code=200)
 
@@ -62,18 +117,27 @@ def get_info():
 
 
 # ============================================================
-# ⚠️ 3. GET Outliers
+# 3. GET Outliers
 # ============================================================
 @router.get(
     "/data/outliers",
-    summary="Detect outliers in dataset",
-    description="Detect outliers safely even when dataset is empty."
+    summary="[AirQ] Detect outliers in dataset",
+    description="Detect outliers safely even when dataset is empty.",
+    responses={
+        200: {"description": "Outliers detected and returned"},
+        500: {"description": "Internal server error"},
+    },
 )
 def get_outliers():
+    """
+    Detects statistical outliers in numeric pollutant columns.
+
+    Returns a list of outlier records or an empty list when no data is available.
+    """
     try:
         rows = fetch_all_data()
         if not rows:
-            return []
+            return JSONResponse(content={"outliers": [], "status": "ok"}, status_code=200)
 
         df = pd.DataFrame(rows)
         outliers = detect_outliers(df)
@@ -84,17 +148,17 @@ def get_outliers():
 
 
 # ============================================================
-# 🧹 4. Handle Outliers (Interpolate)
+# 4. Handle Outliers (Interpolate)
 # ============================================================
 @router.post(
     "/data/outliers-handle",
-    summary="Interpolate detected outliers",
+    summary="[AirQ] Interpolate detected outliers",
     description="""
     Automatically replaces detected outlier values in numeric columns using **linear interpolation**.
 
     Process:
-    1. Detects outliers where |x - μ| > 3σ  
-    2. Sets those values to `null`  
+    1. Detects outliers where |x - μ| > 3σ
+    2. Sets those values to `null`
     3. Fills gaps using linear interpolation across time (`waktu`)
 
     Updates the database in place.
@@ -103,9 +167,21 @@ def get_outliers():
     ```json
     {"message": "12 outlier values have been interpolated successfully."}
     ```
-    """
+    """,
+    responses={
+        200: {"description": "Outliers interpolated and DB updated"},
+        200: {"description": "No outliers detected (no changes)"},
+        500: {"description": "Internal server error"},
+    },
 )
 def handle_outliers():
+    """
+    Finds outliers in numeric pollutant columns and replaces them by linear interpolation.
+
+    Numeric columns processed: pm10, pm25, so2, co, o3, no2, hc, kelembaban, suhu.
+
+    The function updates the `air_quality_data` table row-by-row with interpolated values.
+    """
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
@@ -114,12 +190,23 @@ def handle_outliers():
         rows = cursor.fetchall()
 
         if not rows:
-            cursor.close(); conn.close()
-            return {"message": "No data available."}
+            cursor.close()
+            conn.close()
+            return JSONResponse(content={"message": "No data available."}, status_code=200)
 
         df = pd.DataFrame(rows)
         df["waktu"] = pd.to_datetime(df["waktu"])
-        numeric_cols = ["pm10","pm25","so2","co","o3","no2","hc","kelembaban","suhu"]
+        numeric_cols = [
+            "pm10",
+            "pm25",
+            "so2",
+            "co",
+            "o3",
+            "no2",
+            "hc",
+            "kelembaban",
+            "suhu",
+        ]
 
         outlier_mask = pd.DataFrame(False, index=df.index, columns=numeric_cols)
         for col in numeric_cols:
@@ -127,12 +214,13 @@ def handle_outliers():
             outlier_mask[col] = (df[col] - mean).abs() > 3 * std
 
         if not outlier_mask.values.any():
-            cursor.close(); conn.close()
-            return {"message": "No outliers detected."}
+            cursor.close()
+            conn.close()
+            return JSONResponse(content={"message": "No outliers detected."}, status_code=200)
 
         for col in numeric_cols:
             df.loc[outlier_mask[col], col] = None
-            df[col] = df[col].interpolate(method='linear', limit_direction='both')
+            df[col] = df[col].interpolate(method="linear", limit_direction="both")
 
         for _, row in df.iterrows():
             sql = """
@@ -141,67 +229,122 @@ def handle_outliers():
                     kelembaban=%s, suhu=%s
                 WHERE id=%s
             """
-            cursor.execute(sql, (
-                row["pm10"], row["pm25"], row["so2"], row["co"], row["o3"],
-                row["no2"], row["hc"], row["kelembaban"], row["suhu"], row["id"]
-            ))
-        conn.commit(); cursor.close(); conn.close()
+            cursor.execute(
+                sql,
+                (
+                    row["pm10"],
+                    row["pm25"],
+                    row["so2"],
+                    row["co"],
+                    row["o3"],
+                    row["no2"],
+                    row["hc"],
+                    row["kelembaban"],
+                    row["suhu"],
+                    row["id"],
+                ),
+            )
+        conn.commit()
+        cursor.close()
+        conn.close()
 
-        return {"message": f"{outlier_mask.values.sum()} outlier values interpolated successfully."}
+        return JSONResponse(
+            content={
+                "message": f"{int(outlier_mask.values.sum())} outlier values interpolated successfully."
+            },
+            status_code=200,
+        )
     except Exception as e:
         traceback.print_exc()
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
 
 # ============================================================
-# 🗑️ 5. Delete All Data
+# 5. Delete All Data
 # ============================================================
 @router.delete(
     "/data/delete-all",
-    summary="Delete all air quality data",
+    summary="[AirQ] Delete all air quality data",
     description="""
     Permanently removes **all records** from the `air_quality_data` table.
 
     ⚠️ **Warning:** This action cannot be undone.
     Use with caution in administrative or reset scenarios.
-    """
+
+    ---
+    ### 🔹 Example cURL:
+    ```bash
+    curl -X DELETE "https://airq.abiila.com/api/v1/data/delete-all" -H "accept: application/json"
+    ```
+
+    ### 🔹 Example Response:
+    ```json
+    {"message": "All data records have been deleted successfully."}
+    ```
+    """,
+    responses={
+        200: {"description": "All records deleted successfully"},
+        500: {"description": "Internal server error"},
+    },
 )
 def delete_all_data():
+    """
+    Deletes every row from `air_quality_data`. Intended for administrative resets.
+    """
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("DELETE FROM air_quality_data")
         conn.commit()
-        cursor.close(); conn.close()
-        return {"message": "All data records have been deleted successfully."}
+        cursor.close()
+        conn.close()
+        return JSONResponse(content={"message": "All data records have been deleted successfully."}, status_code=200)
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
 
 # ============================================================
-# 📤 6. Upload CSV
+# 6. Upload CSV
 # ============================================================
 @router.post(
     "/upload-csv",
-    summary="Upload CSV dataset",
+    summary="[AirQ] Upload CSV dataset",
     description="""
-    Upload a CSV file containing air quality data and insert it into the database.
+    Upload a CSV file containing historical air quality measurements and insert it into the database.
 
-    **Required columns:**
-    - `Waktu`, `PM10`, `PM25`, `SO2`, `CO`, `O3`, `NO2`, `HC`  
-    **Optional:** `Kelembaban`, `Suhu`
+    Each record represents one timestamp (`Waktu`) and pollutant concentration values.
 
-    Example CSV:
+    ---
+    ### 🔹 Required Columns:
+    - `Waktu`, `PM10`, `PM25`, `SO2`, `CO`, `O3`, `NO2`, `HC`
+    ### 🔹 Optional Columns:
+    - `Kelembaban`, `Suhu`
+
+    ---
+    ### 🔹 Example cURL:
+    ```bash
+    curl -X POST "https://airq.abiila.com/api/v1/upload-csv" \
+         -H "accept: application/json" \
+         -F "file=@dataset.csv"
     ```
-    Waktu,PM10,PM25,SO2,CO,O3,NO2,HC,Kelembaban,Suhu
-    2024-07-30 00:00:00,74,15,6,351,33,17,388,72,30
-    2024-07-31 00:00:00,64,19,8,253,38,53,353,78,28
-    ```
 
-    Automatically converts the `Waktu` column into a datetime format and skips invalid rows.
-    """
+    ### 🔹 Example Response:
+    ```json
+    {"message": "CSV file uploaded and saved successfully."}
+    ```
+    """,
+    responses={
+        200: {"description": "CSV file uploaded successfully"},
+        400: {"description": "Invalid CSV file or missing columns"},
+        500: {"description": "Internal server error"},
+    },
 )
 async def upload_csv(file: UploadFile = File(...)):
+    """
+    Upload CSV dataset and import into `air_quality_data` table.
+
+    Converts `Waktu` into datetime and skips rows with invalid timestamps.
+    """
     try:
         if not file.filename.endswith(".csv"):
             return JSONResponse({"error": "File must be in CSV format."}, status_code=400)
@@ -209,7 +352,16 @@ async def upload_csv(file: UploadFile = File(...)):
         content = await file.read()
         data = pd.read_csv(io.StringIO(content.decode("utf-8")))
 
-        required_cols = ["Waktu", "PM10", "PM25", "SO2", "CO", "O3", "NO2", "HC"]
+        required_cols = [
+            "Waktu",
+            "PM10",
+            "PM25",
+            "SO2",
+            "CO",
+            "O3",
+            "NO2",
+            "HC",
+        ]
         for col in required_cols:
             if col not in data.columns:
                 return JSONResponse({"error": f"Missing column '{col}'"}, 400)
@@ -231,29 +383,48 @@ async def upload_csv(file: UploadFile = File(...)):
         """
 
         for _, r in data.iterrows():
-            cursor.execute(insert_sql, (
-                r["Waktu"].strftime("%Y-%m-%d %H:%M:%S"),
-                r["PM10"], r["PM25"], r["SO2"], r["CO"],
-                r["O3"], r["NO2"], r["HC"], r["Kelembaban"], r["Suhu"]
-            ))
+            cursor.execute(
+                insert_sql,
+                (
+                    r["Waktu"].strftime("%Y-%m-%d %H:%M:%S"),
+                    r["PM10"],
+                    r["PM25"],
+                    r["SO2"],
+                    r["CO"],
+                    r["O3"],
+                    r["NO2"],
+                    r["HC"],
+                    r["Kelembaban"],
+                    r["Suhu"],
+                ),
+            )
 
-        conn.commit(); cursor.close(); conn.close()
-        return {"message": "CSV file uploaded and saved successfully."}
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return JSONResponse(content={"message": "CSV file uploaded and saved successfully."}, status_code=200)
     except Exception as e:
         traceback.print_exc()
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
 # ============================================================
-# ✍️ 7. Manual Data Input
+# 7. Manual Data Input
 # ============================================================
 @router.post(
     "/input",
-    summary="Manually insert new record",
-    description="""
-    Insert a single record manually into the air quality dataset via JSON body.
+    summary="[AirQ] Manually insert new record",
+    description="Insert a single record manually into the air quality dataset via JSON body.",
+    responses={
+        200: {"description": "Record inserted successfully"},
+        500: {"description": "Internal server error"},
+    },
+)
+async def input_air_quality(request: Request):
+    """
+    Insert a single measurement record into `air_quality_data`.
 
-    Example request:
+    Example request body:
     ```json
     {
         "waktu": "2024-07-30 00:00:00",
@@ -269,8 +440,6 @@ async def upload_csv(file: UploadFile = File(...)):
     }
     ```
     """
-)
-async def input_air_quality(request: Request):
     try:
         data = await request.json()
         conn = get_db_connection()
@@ -280,24 +449,36 @@ async def input_air_quality(request: Request):
         (waktu, pm10, pm25, so2, co, o3, no2, hc, kelembaban, suhu)
         VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """
-        cursor.execute(sql, (
-            data.get("waktu"), data.get("pm10"), data.get("pm25"),
-            data.get("so2"), data.get("co"), data.get("o3"),
-            data.get("no2"), data.get("hc"), data.get("kelembaban"),
-            data.get("suhu")
-        ))
-        conn.commit(); cursor.close(); conn.close()
-        return {"message": "Record inserted successfully into database."}
+        cursor.execute(
+            sql,
+            (
+                data.get("waktu"),
+                data.get("pm10"),
+                data.get("pm25"),
+                data.get("so2"),
+                data.get("co"),
+                data.get("o3"),
+                data.get("no2"),
+                data.get("hc"),
+                data.get("kelembaban"),
+                data.get("suhu"),
+            ),
+        )
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return JSONResponse(content={"message": "Record inserted successfully into database."}, status_code=200)
     except Exception as e:
         traceback.print_exc()
-        return JSONResponse({"error": str(e)}, status_code=500)
+        return JSONResponse(content={"error": str(e)}, status_code=500)
 
-# ==============================
-# 🤖 8. Process Forecast Basic
-# ==============================
+
+# ============================================================
+# 8. Process Forecast Basic
+# ============================================================
 @router.post(
     "/model/process-basic",
-    summary="Generate Prophet forecast (Basic Model)",
+    summary="[AirQ] Generate Prophet forecast (Basic Model)",
     description="""
     Trains a **basic Prophet model** for all 7 pollutants (`PM10`, `PM25`, `SO2`, `O3`, `NO2`, `CO`, `HC`).
 
@@ -312,16 +493,33 @@ async def input_air_quality(request: Request):
       "message": "Forecast Prophet successfully processed for all pollutants.",
       "forecast": {
         "pm10": [
-          {"ds": "2024-08-01", "yhat": 42.3, "yhat_lower": 37.8, "yhat_upper": 48.2},
-          {"ds": "2024-08-02", "yhat": 43.1, "yhat_lower": 38.1, "yhat_upper": 49.0}
+          {"ds": "2025-11-13", "yhat": 42.3, "yhat_lower": 37.8, "yhat_upper": 48.2},
+          {"ds": "2025-11-14", "yhat": 43.1, "yhat_lower": 38.1, "yhat_upper": 49.0}
         ],
-        "pm25": [...]
+        "pm25": [
+          {"ds": "2025-11-13", "yhat": 18.4, "yhat_lower": 15.1, "yhat_upper": 22.6}
+        ]
       }
     }
     ```
-    """
+
+    ---
+    ### 🔹 Example cURL:
+    ```bash
+    curl -X POST "https://airq.abiila.com/api/v1/model/process-basic" -H "accept: application/json"
+    ```
+    """,
+    responses={
+        200: {"description": "Forecast successfully processed"},
+        400: {"description": "No data available for processing"},
+        500: {"description": "Internal server error"},
+    },
 )
 def process_basic_all():
+    """
+    Run a Prophet forecast with default parameters for all pollutants.
+    Returns prediction data ready for visualization and evaluation.
+    """
     try:
         rows = fetch_all_data()
         if not rows:
@@ -329,24 +527,24 @@ def process_basic_all():
 
         df = pd.DataFrame(rows)
         df["waktu"] = pd.to_datetime(df["waktu"])
-        pollutants = ["pm10","pm25","so2","o3","no2","co","hc"]
+        pollutants = ["pm10", "pm25", "so2", "o3", "no2", "co", "hc"]
         forecast = process_basic_forecast(df, pollutants)
 
         return JSONResponse({
             "message": "Forecast Prophet successfully processed for all pollutants.",
-            "forecast": forecast
+            "forecast": forecast,
         })
     except Exception as e:
         traceback.print_exc()
-        return JSONResponse({"error": str(e)}, status_code=500)
+        return JSONResponse(content={"error": str(e)}, status_code=500)
 
 
-# ==============================
-# 🧠 9. Process Forecast Advanced
-# ==============================
+# ============================================================
+# 9. Process Forecast Advanced
+# ============================================================
 @router.post(
     "/model/process-advanced",
-    summary="Generate optimized forecast (Advanced Model)",
+    summary="[AirQ] Generate optimized forecast (Advanced Model)",
     description="""
     Trains an **advanced Prophet model** for all 7 pollutants (`PM10`, `PM25`, `SO2`, `O3`, `NO2`, `CO`, `HC`).
 
@@ -364,15 +562,30 @@ def process_basic_all():
       "message": "Forecast with parameters (7 pollutants) successfully processed.",
       "forecast": {
         "pm10": [
-          {"ds": "2024-08-01", "yhat": 41.8, "yhat_lower": 36.2, "yhat_upper": 47.5},
-          {"ds": "2024-08-02", "yhat": 42.4, "yhat_lower": 37.0, "yhat_upper": 48.0}
+          {"ds": "2025-11-13", "yhat": 41.8, "yhat_lower": 36.2, "yhat_upper": 47.5}
         ]
       }
     }
     ```
-    """
+
+    ---
+    ### 🔹 Example cURL:
+    ```bash
+    curl -X POST "https://airq.abiila.com/api/v1/model/process-advanced" -H "accept: application/json"
+    ```
+    """,
+    responses={
+        200: {"description": "Advanced forecast processed"},
+        400: {"description": "No data available for processing"},
+        500: {"description": "Internal server error"},
+    },
 )
 def process_advanced_all():
+    """
+    Run an advanced Prophet workflow with hyperparameter optimization and holidays.
+
+    This endpoint streams progress internally but returns when processing completes.
+    """
     def progress_stream():
         try:
             rows = fetch_all_data()
@@ -389,9 +602,9 @@ def process_advanced_all():
 
             for idx, pol in enumerate(pollutants, start=1):
                 try:
-                    yield f"data: {json.dumps({'status': 'processing', 'pollutant': pol.upper(), 'progress': round((idx-1)/total*100,2)})}\n\n"
-                    result = process_advanced_forecast(df, [pol])
-                    yield f"data: {json.dumps({'status': 'done', 'pollutant': pol.upper(), 'progress': round(idx/total*100,2)})}\n\n"
+                    yield f"data: {json.dumps({'status': 'processing', 'pollutant': pol.upper(), 'progress': round((idx - 1) / total * 100, 2)})}\n\n"
+                    result = process_advanced_forecast_stream(df, [pol])
+                    yield f"data: {json.dumps({'status': 'done', 'pollutant': pol.upper(), 'progress': round(idx / total * 100, 2)})}\n\n"
                 except Exception as e:
                     yield f"data: {json.dumps({'status': 'error', 'pollutant': pol.upper(), 'message': str(e)})}\n\n"
                     continue
@@ -407,14 +620,15 @@ def process_advanced_all():
 
     return StreamingResponse(progress_stream(), media_type="text/event-stream")
 
-# ==============================
-# 🧠 9B. Process Forecast Advanced (Streaming Progress)
-# ==============================
+
+# ============================================================
+# 9B. Process Forecast Advanced (Streaming Progress)
+# ============================================================
 @router.get(
     "/model/process-advanced/stream",
-    summary="Stream advanced forecast progress (real-time)",
+    summary="[AirQ] Stream advanced forecast progress (real-time)",
     description="""
-    Streams live progress updates for advanced forecast processing (per pollutant).  
+    Streams live progress updates for advanced forecast processing (per pollutant).
     Uses **Server-Sent Events (SSE)**, allowing the frontend to show real-time status and progress bar.
 
     Example stream output:
@@ -424,10 +638,16 @@ def process_advanced_all():
     data: {"status":"complete","progress":100,"message":"All forecasts done!"}
     ```
     """,
+    responses={
+        200: {"description": "SSE stream of progress events"},
+        500: {"description": "Internal server error"},
+    },
 )
 def process_advanced_stream():
     """
-    SSE endpoint for real-time progress of advanced Prophet forecast.
+    SSE endpoint for real-time progress of the advanced Prophet forecast.
+
+    The frontend should connect using EventSource to receive `data:` events.
     """
     def event_stream():
         rows = fetch_all_data()
@@ -441,7 +661,6 @@ def process_advanced_stream():
 
         yield f"data: {json.dumps({'status': 'start', 'message': 'Starting advanced forecasting for all pollutants'})}\n\n"
 
-        # Jalankan stream dari ml.py
         for event in process_advanced_forecast_stream(df, pollutants):
             yield event
 
@@ -449,64 +668,13 @@ def process_advanced_stream():
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
-    """
-    Stream real-time progress of the advanced Prophet forecast process for each pollutant.
-    """
-    def event_stream():
-        rows = fetch_all_data()
-        if not rows:
-            yield f"data: {json.dumps({'status': 'error', 'message': 'No data available'})}\n\n"
-            return
 
-        df = pd.DataFrame(rows)
-        df["waktu"] = pd.to_datetime(df["waktu"])
-        pollutants = ["pm10", "pm25", "so2", "o3", "no2", "co", "hc"]
-
-        # Kirim event awal
-        yield f"data: {json.dumps({'status': 'start', 'message': 'Starting advanced forecast process'})}\n\n"
-
-        # Jalankan untuk setiap polutan
-        for pol in pollutants:
-            yield f"data: {json.dumps({'status': 'begin', 'pollutant': pol.upper(), 'progress': 0, 'message': f'Starting {pol.upper()}'})}\n\n"
-
-            # ---- progress callback dari ml.py ----
-            def progress_callback(pollutant, progress, message):
-                """
-                Callback ini dipanggil oleh process_advanced_forecast setiap kali ada update progress.
-                """
-                payload = {
-                    "status": "progress",
-                    "pollutant": pollutant.upper(),
-                    "progress": progress,
-                    "message": message
-                }
-                yield_data.append(f"data: {json.dumps(payload)}\n\n")
-
-            # Wadah sementara untuk data event
-            yield_data = []
-
-            # Jalankan forecasting dengan callback progress
-            process_advanced_forecast(df, [pol], progress_callback=lambda p, prog, msg: yield_data.append(
-                f"data: {json.dumps({'status': 'progress', 'pollutant': p.upper(), 'progress': prog, 'message': msg})}\n\n"
-            ))
-
-            # Kirim seluruh progress ke stream
-            for msg in yield_data:
-                yield msg
-
-            # Tandai selesai satu polutan
-            yield f"data: {json.dumps({'status': 'done', 'pollutant': pol.upper(), 'progress': 100, 'message': f'{pol.upper()} completed'})}\n\n"
-
-        # Semua selesai
-        yield f"data: {json.dumps({'status': 'complete', 'message': '✅ All forecasts completed successfully'})}\n\n"
-
-    return StreamingResponse(event_stream(), media_type="text/event-stream")
-# ==============================
-# 🧹 10. Clear Forecast Tables
-# ==============================
+# ============================================================
+# 10. Clear Forecast Tables
+# ============================================================
 @router.delete(
     "/model/clear-forecast",
-    summary="Clear all forecast result tables",
+    summary="[AirQ] Clear all forecast result tables",
     description="""
     Truncates (clears) all forecast result tables in the database, including both basic and parameterized model outputs:
 
@@ -518,35 +686,52 @@ def process_advanced_stream():
     ```json
     {"message": "All forecast tables have been cleared successfully."}
     ```
-    """
+    """,
+    responses={
+        200: {"description": "All forecast tables cleared successfully"},
+        500: {"description": "Internal server error"},
+    },
 )
 def clear_forecast():
+    """
+    Truncates all forecast result tables used by the AirQ forecasting pipelines.
+    """
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
         tables = [
-            "forecast_pm10_data", "forecast_pm10_with_parameters_data",
-            "forecast_pm25_data", "forecast_pm25_with_parameters_data",
-            "forecast_so2_data", "forecast_so2_with_parameters_data",
-            "forecast_o3_data", "forecast_o3_with_parameters_data",
-            "forecast_no2_data", "forecast_no2_with_parameters_data",
-            "forecast_co_data", "forecast_co_with_parameters_data",
-            "forecast_hc_data", "forecast_hc_with_parameters_data"
+            "forecast_pm10_data",
+            "forecast_pm10_with_parameters_data",
+            "forecast_pm25_data",
+            "forecast_pm25_with_parameters_data",
+            "forecast_so2_data",
+            "forecast_so2_with_parameters_data",
+            "forecast_o3_data",
+            "forecast_o3_with_parameters_data",
+            "forecast_no2_data",
+            "forecast_no2_with_parameters_data",
+            "forecast_co_data",
+            "forecast_co_with_parameters_data",
+            "forecast_hc_data",
+            "forecast_hc_with_parameters_data",
         ]
         for t in tables:
             cursor.execute(f"TRUNCATE TABLE {t}")
-        conn.commit(); cursor.close(); conn.close()
-        return {"message": "All forecast tables have been cleared successfully."}
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return JSONResponse(content={"message": "All forecast tables have been cleared successfully."}, status_code=200)
     except Exception as e:
         traceback.print_exc()
         return JSONResponse({"error": str(e)}, status_code=500)
 
+
 # ============================================================
-# 🧩 11. SYSTEM STATUS & TECHNOLOGIES
+# 11. SYSTEM STATUS & TECHNOLOGIES
 # ============================================================
 @router.get(
     "/status",
-    summary="Check backend system and technology status",
+    summary="[AirQ] Check backend system and technology status",
     description="""
     Returns the current operational status of the **AirQ system**, including backend, database, and model readiness.
     Also lists all technologies used in this project stack.
@@ -562,24 +747,31 @@ def clear_forecast():
         "frontend": "ReactJS",
         "backend": "FastAPI",
         "ml_model": "Facebook Prophet",
-        "database": "MySQL",
+ "database": "MySQL",
         "deployment": "Gunicorn",
         "os": "AlmaLinux 9"
       },
       "timestamp": "2025-11-09T20:45:10"
     }
     ```
-    """
+    """,
+    responses={
+        200: {"description": "System status returned"},
+        500: {"description": "Internal server error"},
+    },
 )
 def system_status():
+    """
+    Checks database connectivity and returns a summary of services and technologies.
+    """
     from sqlalchemy import create_engine, text
+    from urllib.parse import quote_plus
     import os
 
     db_status = "disconnected"
     try:
-        engine = create_engine(
-            "mysql+pymysql://abiila_admin_airq:2!7oiFWMIF68@127.0.0.1/abiila_airq_db"
-        )
+        password = quote_plus("2!7oiFWMIF68")
+        engine = create_engine(f"mysql+pymysql://abiila_admin:{password}@127.0.0.1/abiila_airq_db")
 
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
@@ -601,9 +793,9 @@ def system_status():
             "ml_model": "Facebook Prophet",
             "database": "MySQL",
             "deployment": "Gunicorn",
-            "os": "AlmaLinux 9"
+            "os": "AlmaLinux 9",
         },
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
     }
 
     return JSONResponse(content=system_info, status_code=200)
