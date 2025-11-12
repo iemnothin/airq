@@ -764,21 +764,19 @@ def system_status():
     """
     Checks database connectivity and returns a summary of services and technologies.
     """
-    from sqlalchemy import create_engine, text
-    from urllib.parse import quote_plus
-    import os
+    from db import get_db_connection
+    from datetime import datetime
 
     db_status = "disconnected"
     try:
-        password = quote_plus("2!7oiFWMIF68")
-        engine = create_engine(f"mysql+pymysql://abiila_admin:{password}@127.0.0.1/abiila_airq_db")
-
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1")
         db_status = "connected"
+        cursor.close()
+        conn.close()
     except Exception as e:
         print("Database connection failed:", e)
-        db_status = "disconnected"
 
     model_status = "ready"
 
@@ -786,16 +784,16 @@ def system_status():
         "backend": "online",
         "database": db_status,
         "model_status": model_status,
-        "server": "Apache",
+        "server": "VPS Almalinux + cPanel + Apache",
         "technologies": {
-            "frontend": "ReactJS",
-            "backend": "FastAPI",
+            "frontend": "ReactJS + Bootstrap 5",
+            "backend": "Python FastAPI",
             "ml_model": "Facebook Prophet",
-            "database": "MySQL",
-            "deployment": "Gunicorn",
-            "os": "AlmaLinux 9",
+            "database": "MySQL / PostgreSQL",
+            "deployment": "Gunicorn + Systemd",
+            "os": "AlmaLinux 9"
         },
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": datetime.now().isoformat()
     }
 
     return JSONResponse(content=system_info, status_code=200)
