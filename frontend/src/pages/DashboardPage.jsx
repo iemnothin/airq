@@ -201,9 +201,7 @@ const DashboardPage = () => {
 
       {/* ================= FOOTER ================= */}
       <footer className="mt-5 text-center text-muted small">
-        <p className="mb-0">
-          © {new Date().getFullYear()} AirQ Dashboard — abiila
-        </p>
+        <p className="mb-0">© {new Date().getFullYear()} AirQ — abiila</p>
       </footer>
     </div>
   );
