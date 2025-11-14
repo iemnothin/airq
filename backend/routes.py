@@ -69,7 +69,29 @@ def get_all_data():
     """
     try:
         rows = fetch_all_data()
-        return JSONResponse(content=rows, status_code=200)
+
+        # Jika fetch_all_data() return None, ubah ke []
+        if rows is None:
+            rows = []
+
+        if len(rows) == 0:
+            return JSONResponse(
+                content={
+                    "status": "empty",
+                    "message": "Belum ada data yang diupload.",
+                    "data": []
+                },
+                status_code=200
+            )
+
+        return JSONResponse(
+            content={
+                "status": "ok",
+                "data": rows
+            },
+            status_code=200
+        )
+
     except Exception as e:
         traceback.print_exc()
         return JSONResponse(content={"error": str(e)}, status_code=500)
@@ -99,21 +121,27 @@ def get_info():
     try:
         rows = fetch_all_data()
         if not rows:
-            default_info = {
-                "totalData": 0,
-                "outlierClear": True,
-                "nanClear": True,
-                "outlierCount": 0,
-                "nanCount": 0,
-                "message": "No data available yet.",
-            }
-            return JSONResponse(content=default_info, status_code=200)
+            return {"outliers": []}
+
+        # if not rows:
+        #     return JSONResponse(
+        #         content={
+        #             "totalData": 0,
+        #             "outlierClear": True,
+        #             "nanClear": True,
+        #             "outlierCount": 0,
+        #             "nanCount": 0,
+        #             "message": "Belum ada data yang diupload."
+        #         },
+        #         status_code=200
+        #     )
 
         info = get_data_info(rows)
         return JSONResponse(content=info, status_code=200)
+
     except Exception as e:
         traceback.print_exc()
-        return JSONResponse(content={"error": str(e)}, status_code=500)
+        return JSONResponse({"error": str(e)}, 500)
 
 
 # ============================================================
