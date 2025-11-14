@@ -99,7 +99,7 @@ const ModelPage = ({ setError }) => {
       const resData = await fetch(`${API_BASE}/data`);
       if (!resData.ok) throw new Error();
       const data = await resData.json();
-      setUploadedData(Array.isArray(data) ? data : []);
+      setUploadedData(Array.isArray(data.data) ? data.data : []);
 
       const resInfo = await fetch(`${API_BASE}/data/info`);
       if (!resInfo.ok) throw new Error();
@@ -723,33 +723,41 @@ const ModelPage = ({ setError }) => {
             </div>
           </div>
         ) : (
-          <DragDropUpload
-            apiBase={API_BASE}
-            onStart={() => {
-              setIsUploadingFile(true);
-              setUploadProgress(0);
-            }}
-            onProgress={(p) => {
-              setUploadProgress(p);
-            }}
-            onDone={async (res) => {
-              setIsUploadingFile(false);
-              // Set success message and show toast
-              setToastMessage("File berhasil diupload dan data telah dimuat!");
-              setShowSuccessToast(true);
-              setTimeout(() => setShowSuccessToast(false), 3000);
-              await fetchUploadedData();
-              const outlierData = await fetchOutliers(API_BASE);
-              setOutliers(outlierData);
-            }}
-            onError={(err) => {
-              setIsUploadingFile(false);
-              // show error toast (you asked to create an error toast earlier)
-              setErrorMessage(err?.message || "Upload failed");
-              setShowErrorToast(true); // reuse success toast component but show message; or create error toast component
-              setTimeout(() => setShowErrorToast(false), 4000);
-            }}
-          />
+          <>
+            <div className="alert alert-warning text-center">
+              ⚠️ Belum ada data diupload.
+            </div>
+
+            <DragDropUpload
+              apiBase={API_BASE}
+              onStart={() => {
+                setIsUploadingFile(true);
+                setUploadProgress(0);
+              }}
+              onProgress={(p) => {
+                setUploadProgress(p);
+              }}
+              onDone={async (res) => {
+                setIsUploadingFile(false);
+                // Set success message and show toast
+                setToastMessage(
+                  "File berhasil diupload dan data telah dimuat!"
+                );
+                setShowSuccessToast(true);
+                setTimeout(() => setShowSuccessToast(false), 3000);
+                await fetchUploadedData();
+                const outlierData = await fetchOutliers(API_BASE);
+                setOutliers(outlierData);
+              }}
+              onError={(err) => {
+                setIsUploadingFile(false);
+                // show error toast (you asked to create an error toast earlier)
+                setErrorMessage(err?.message || "Upload failed");
+                setShowErrorToast(true); // reuse success toast component but show message; or create error toast component
+                setTimeout(() => setShowErrorToast(false), 4000);
+              }}
+            />
+          </>
         )}
       </div>
     </>
