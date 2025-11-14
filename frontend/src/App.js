@@ -24,12 +24,12 @@ function App() {
   const [loading] = useState(false);
   const [error, setError] = useState(null);
 
-  // ✅ Loading global
+  // Loading global
   if (loading) return <LoadingScreen />;
 
-  // ✅ Backend error page (INI YANG KITA MAU)
+  // Backend error page
   if (error) {
-    const randomChance = Math.random() < 0.05; // 5% chance setiap error
+    const randomChance = Math.random() < 0.05;
 
     return (
       <BackendErrPage
@@ -62,7 +62,7 @@ function App() {
             element={<ForecastPage setError={setError} />}
           /> */}
           {/* Halaman Model page */}
-          <Route path="/model" element={<ModelPage setError={setError} />} />
+          <Route path="/model" element={<ModelPage />} />
           {/* Halaman ISPU page */}
           {/* <Route path="/ispu" element={<IspuPage setError={setError} />} /> */}
         </Route>

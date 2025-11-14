@@ -14,62 +14,6 @@ from ml import (
     process_advanced_forecast_stream
 )
 
-from datetime import datetime
-import decimal
-
-def serialize_rows(rows):
-    """
-    Pastikan semua nilai yang tidak JSON-serializable (datetime, Decimal) diubah ke tipe primitif.
-    - Jika rows is None -> return []
-    - Jika rows is list of dict -> convert tiap dict
-    - Mengembalikan list of dict
-    """
-    if rows is None:
-        return []
-
-    # if single dict, wrap jadi list
-    single = False
-    if isinstance(rows, dict):
-        rows = [rows]
-        single = True
-
-    out = []
-    for r in rows:
-        # jika r bukan dict, tambahkan langsung
-        if not isinstance(r, dict):
-            out.append(r)
-            continue
-
-        nr = {}
-        for k, v in r.items():
-            # datetime -> format string
-            if isinstance(v, datetime):
-                nr[k] = v.strftime("%Y-%m-%d %H:%M:%S")
-                continue
-
-            # Decimal -> float (atau str jika ingin presisi)
-            if isinstance(v, decimal.Decimal):
-                try:
-                    nr[k] = float(v)
-                except Exception:
-                    nr[k] = str(v)
-                continue
-
-            # Bytes -> decode
-            if isinstance(v, (bytes, bytearray)):
-                try:
-                    nr[k] = v.decode("utf-8")
-                except Exception:
-                    nr[k] = str(v)
-                continue
-
-            # default: biarkan apa adanya
-            nr[k] = v
-        out.append(nr)
-
-    return out[0] if single else out
-
-
 router = APIRouter(prefix="/api/v1", tags=["Air Quality Data & Forecasting"])
 
 # ============================================================
@@ -125,30 +69,7 @@ def get_all_data():
     """
     try:
         rows = fetch_all_data()
-
-        # Jika kosong
-        if not rows:
-            return JSONResponse(
-                content={
-                    "status": "empty",
-                    "message": "Belum ada data yang diupload.",
-                    "data": []
-                },
-                status_code=200
-            )
-
-        # Serialize datetime → string
-        rows = serialize_rows(rows)
-
-        return JSONResponse(
-            content={
-                "status": "ok",
-                "data": rows
-            },
-            status_code=200
-        )
-
-
+        return JSONResponse(content={"data": rows, "status": "ok"}, status_code=200)
     except Exception as e:
         traceback.print_exc()
         return JSONResponse(content={"error": str(e)}, status_code=500)
@@ -177,26 +98,22 @@ def get_info():
     """
     try:
         rows = fetch_all_data()
-
         if not rows:
-            return JSONResponse(
-                content={
-                    "totalData": 0,
-                    "outlierClear": True,
-                    "nanClear": True,
-                    "outlierCount": 0,
-                    "nanCount": 0,
-                    "message": "Belum ada data yang diupload."
-                },
-                status_code=200
-            )
+            default_info = {
+                "totalData": 0,
+                "outlierClear": True,
+                "nanClear": True,
+                "outlierCount": 0,
+                "nanCount": 0,
+                "message": "No data available yet.",
+            }
+            return JSONResponse(content=default_info, status_code=200)
 
         info = get_data_info(rows)
         return JSONResponse(content=info, status_code=200)
-
     except Exception as e:
         traceback.print_exc()
-        return JSONResponse({"error": str(e)}, 500)
+        return JSONResponse(content={"error": str(e)}, status_code=500)
 
 
 # ============================================================
