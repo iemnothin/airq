@@ -69,7 +69,7 @@ def get_all_data():
     """
     try:
         rows = fetch_all_data()
-        return JSONResponse(content={"data": rows, "status": "ok"}, status_code=200)
+        return JSONResponse(content=rows, status_code=200)
     except Exception as e:
         traceback.print_exc()
         return JSONResponse(content={"error": str(e)}, status_code=500)
