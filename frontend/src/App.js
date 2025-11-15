@@ -62,7 +62,7 @@ function App() {
             element={<ForecastPage setError={setError} />}
           /> */}
           {/* Halaman Model page */}
-          <Route path="/model" element={<ModelPage />} />
+          <Route path="/model" element={<ModelPage setError={setError} />} />
           {/* Halaman ISPU page */}
           {/* <Route path="/ispu" element={<IspuPage setError={setError} />} /> */}
         </Route>
